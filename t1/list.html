@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista de Avisos de Adopción</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+	<link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+	<div id="menu-container"></div>
+	
+  <main id="main">
+		<h1>Listado de Avisos de Adopción</h1>
+    <div id="adoptions-list" class="adoptions-list"></div>
+  </main>
+
+  <!-- Lightbox global para fotos -->
+	<div id="photo-lightbox" class="photo-lightbox" aria-hidden="true">
+		<div class="photo-lightbox__backdrop" data-close></div>
+		<figure
+			class="photo-lightbox__figure"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Vista ampliada de foto"
+		>
+			<!--es un gif 1x1 transparente soluciona el validador usado en el curso -->
+			<img id="lightbox-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" 
+			alt="Foto ampliada" width="800" height="600">
+			<button class="photo-lightbox__close" type="button" data-close>Cerrar</button>
+			<figcaption id="lightbox-caption" class="photo-lightbox__caption"></figcaption>
+		</figure>
+	</div>
+	
+	<!-- Dependencias -->
+  <script src="js/data/dummy.js"></script>
+	
+	<!-- Componentes -->
+  <script src="js/components/AdoptionList.js"></script>
+	<script src="js/components/MenuSidebar.js"></script>
+	<script>
+    // Sidebar
+    const menu = new MenuSidebar({ openWidth: 140, closedWidth: 56, brandHtml: "🐾" });
+    document.getElementById("menu-container").appendChild(menu.render());
+	</script>
+</body>
+</html>

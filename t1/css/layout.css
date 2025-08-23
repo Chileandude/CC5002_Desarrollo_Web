@@ -1,0 +1,109 @@
+/* Contenedor principal */
+#main {
+  transition: margin-left 0.3s ease;
+  padding: 20px;
+  margin-left: 56px;
+}
+
+:root {
+  --link: #f1f1f1;
+  --link-hover: #575757;
+}
+
+/* Contenedor del menú lateral */
+.sidenav {
+  height: 100%;
+  width: 56px;
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  background-color: #111;
+  overflow-x: hidden;
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Estados (el ancho final lo setea JS con inline style) */
+.sidenav--closed { }
+.sidenav--open { }
+
+/* Botón toggle */
+.sidenav__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 12px 10px;
+}
+
+.sidenav__toggle:hover {
+  background: var(--link-hover);
+}
+
+/* Logo/brand que queda visible cuando está cerrada */
+.sidenav__brand {
+  font-size: 20px;            /* sustituye por <img> */
+  display: inline-block;
+  width: 24px;
+  text-align: center;
+}
+
+/* Indicador de apertura/cierre */
+.sidenav__chevron {
+  font-weight: bold;
+}
+
+/* Contenedor de links */
+.sidenav__links {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+/* Estética de los links */
+.sidenav__links a {
+  padding: 10px 20px;
+  text-decoration: none;
+  font-size: 18px;
+  color: var(--link);
+  display: block;
+  transition: background-color 0.2s ease;
+}
+
+/* Hover en links */
+.sidenav__links a:hover {
+  background: var(--link-hover);
+}
+
+/* Visibilidad de links según estado */
+.sidenav--closed .sidenav__links a {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.sidenav--open .sidenav__links a {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.sidenav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 900; 
+  transition: opacity .2s ease;
+}
+
+.sidenav-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}

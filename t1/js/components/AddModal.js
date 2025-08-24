@@ -522,7 +522,7 @@ class AddModal {
     }
 
     // Mascota
-    if (!Validators.oneOf(this.refs.tipo.value, ["gato", "perro"])) {
+    if (!Validators.oneOf(this.refs.tipo.value, ["Gato", "Perro"])) {
       this.#setError(this.refs.tipo, "Debe seleccionar gato o perro");
       ok = false;
     }
@@ -652,3 +652,4 @@ class AddModal {
   }
 }
 window.AddModal = AddModal;
+

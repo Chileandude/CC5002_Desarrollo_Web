@@ -1,0 +1,53 @@
+/* Reglas específicas para la portada */
+.page-home #last-ads-title {
+  font-size: 60px;
+  text-align: center;
+  line-height: 1.25;  /* opcional */
+}
+
+/* Título centrado con botón al lado */
+.page-home #last-ads .section-header {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.page-home #main .main__inner {
+  width: clamp(280px, 76vw, 980px);
+  margin: 0 auto;              /* centra horizontal */
+}
+
+/* Ritmo vertical dentro de la portada */
+.page-home #main .main__inner > * + * {
+  margin-top: 12px;
+}
+
+/* La lista de cards usa el ancho del wrapper */
+.page-home #main .home-list,
+.page-home #main .home-grid {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+/* Título principal */
+.page-home #main .main__inner > h1 {
+  text-align: center;
+  font-weight: 700;
+  font-size: clamp(100px, 3.2vw, 40px);
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+/* Botón debajo del título y botón al final */
+.page-home #last-ads .section-top-actions,
+.page-home #last-ads .section-footer {
+  display: flex;
+  justify-content: center;
+}
+
+.page-home #last-ads .section-top-actions { margin: 8px 0 12px; }
+.page-home #last-ads .section-footer     { margin-top: 12px; }

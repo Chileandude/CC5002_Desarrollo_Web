@@ -7,18 +7,24 @@
             this.ads = [];
         }
 
-        #load() {
-            const raw = Array.isArray(window.ADOPTIONS_DUMMY) ? window.ADOPTIONS_DUMMY : [];
-            const hasModel = typeof window.AdoptionAd?.fromJSON === "function";
+        async #load() {
+            this.ads = [];
+            try {
+                const { data } = await window.API.getLatestAds(5); // o el N que quieras
+                const hasModel = typeof window.AdoptionAd?.fromJSON === "function";
+                const mapped = Array.isArray(data) ? data : [];
 
-            this.ads = raw.map((x) => (hasModel ? window.AdoptionAd.fromJSON(x) : x));
+                this.ads = mapped.map(x => (hasModel ? window.AdoptionAd.fromJSON(x) : x));
 
-            if (hasModel && typeof window.AdoptionAd?.byCreatedAsc === "function") {
-                this.ads.sort(window.AdoptionAd.byCreatedAsc);
-            } else {
-                this.ads.sort((a, b) =>
-                    String(a?.creado_en ?? "").localeCompare(String(b?.creado_en ?? ""))
-                );
+                const cmp = (a, b) => String(b?.creado_en ?? "").localeCompare(String(a?.creado_en ?? ""));
+                if (hasModel && typeof window.AdoptionAd?.byCreatedAsc === "function") {
+                    this.ads.sort(cmp);
+                } else {
+                    this.ads.sort(cmp);
+                }
+            } catch (e) {
+                console.error(e);
+                this.ads = [];
             }
         }
 
@@ -35,7 +41,7 @@
             }
 
             // Últimos 5, más recientes primero
-            const last5 = this.ads.slice(-5).reverse();
+            const last5 = this.ads.slice(-5);
 
             this.grid.innerHTML = last5
                 .map((ad) => window.Card.render(ad))
@@ -44,8 +50,11 @@
 
         init() {
             if (!this.grid) return;
-            this.#load();
-            this.#render();
+            this.grid.classList.add("loading");
+            Promise.resolve()
+                .then(() => this.#load())
+                .then(() => this.#render())
+                .finally(() => this.grid.classList.remove("loading"));
         }
     }
 

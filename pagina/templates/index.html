@@ -33,12 +33,12 @@
         </section>
     </div>
 </div>
-<script src="{{ url_for('pages.routes_js') }}"></script>
+
 <!-- Dependencias -->
+<script src="{{ url_for('pages.routes_js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/validators.js') }}"></script>
 <script src="{{ url_for('static', filename='js/data/cl-regions.js') }}"></script>
-<script src="{{ url_for('static', filename='js/models/AdoptionAd.js') }}"></script>
-<script src="{{ url_for('static', filename='js/data/dummy.js') }}"></script>
 
 <!-- Componentes -->
 <script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>

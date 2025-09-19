@@ -1,4 +1,4 @@
-// Requiere: window.Validators, window.CLRegions
+// Requiere: window.Validators
 class AddModal {
     /**
      * @param {Object} [opts]
@@ -106,12 +106,19 @@ class AddModal {
 
         const region = this.#select(true);
         this.refs.region = region;
-        CLRegions.fillRegionSelect(region);
 
         const comuna = this.#select(true);
         this.refs.comuna = comuna;
+
+        this.#loadRegiones().then(() => {
+            if (this.refs.region.options.length > 0) {
+                this.refs.region.dispatchEvent(new Event("change"));
+            }
+        });
+
         region.addEventListener("change", () => {
-            CLRegions.fillComunaSelect(comuna, region.value);
+            const rid = Number(this.refs.region.value || 0);
+            this.#loadComunas(rid);
         });
 
         const sector = this.#input("text", false);
@@ -571,42 +578,52 @@ class AddModal {
         return ok;
     }
 
-    #collectPayload() {
-        const socials = Array.from(this.refs.socialList.querySelectorAll(".social-item"))
-            .map((item) => {
-                const network = item.dataset.network;
-                const value = item.querySelector("input")?.value ?? "";
-                return {network, value};
-            });
+    #collectFormData() {
+        // contactos
+        const socialItems = Array.from(this.refs.socialList.querySelectorAll(".social-item"))
+            .map(item => ({
+                nombre: (item.dataset.network || "").toLowerCase(), // ej: 'instagram'
+                identificador: item.querySelector("input")?.value?.trim() || ""
+            }))
+            .filter(x => x.nombre && x.identificador);
 
+        // fotos
         const photosContainer = this.refs.photosList || this.refs.photosWrap || null;
         const photoInputs = photosContainer
             ? Array.from(photosContainer.querySelectorAll('input[type="file"]'))
             : [];
-        const photos = photoInputs.flatMap((i) => Array.from(i.files ?? []));
+        const files = photoInputs.flatMap(i => Array.from(i.files ?? []));
 
-        return {
-            lugar: {
-                region: this.refs.region.value,
-                comuna: this.refs.comuna.value,
-                sector: this.refs.sector.value ?? "",
-            },
-            contacto: {
-                nombre: this.refs.nombre.value ?? "",
-                email: this.refs.email.value ?? "",
-                celular: this.refs.celular.value ?? "",
-                redes: socials,
-            },
-            mascota: {
-                tipo: this.refs.tipo.value,
-                cantidad: Number(this.refs.cantidad.value),
-                edad: Number(this.refs.edad.value),
-                unidadEdad: this.refs.unidadEdad.value,
-                fechaEntrega: this.refs.fechaEntrega.value, // YYYY-MM-DDThh:mm
-                descripcion: this.refs.descripcion.value ?? "",
-                fotos: photos, // File[]
-            },
-        };
+        // mapear UI -> API
+        const tipo = this.refs.tipo.value.toLowerCase();                // 'gato'|'perro'
+        const unidad = this.refs.unidadEdad.value === "meses" ? "m" : "a";
+        const fechaEntrega = (this.refs.fechaEntrega.value || "");
+
+        const fd = new FormData();
+        fd.append("comuna_id", this.refs.comuna.value);                 // ahora es ID
+        fd.append("sector", this.refs.sector.value || "");
+        fd.append("nombre", this.refs.nombre.value || "");
+        fd.append("email", this.refs.email.value || "");
+        fd.append("celular", this.refs.celular.value || "");
+        fd.append("tipo", tipo);
+        fd.append("cantidad", String(this.refs.cantidad.value || "0"));
+        fd.append("edad", String(this.refs.edad.value || "0"));
+        fd.append("unidad_medida", unidad);
+        fd.append("fecha_entrega", fechaEntrega);
+        fd.append("descripcion", this.refs.descripcion.value || "");
+
+        // contactos[]
+        for (const c of socialItems) {
+            fd.append("contactos[nombre][]", c.nombre);
+            fd.append("contactos[identificador][]", c.identificador);
+        }
+
+        // fotos[]
+        for (const f of files) {
+            fd.append("fotos[]", f, f.name);
+        }
+
+        return fd;
     }
 
     #onSubmit() {
@@ -632,25 +649,84 @@ class AddModal {
 
         const cleanup = () => confirmBox.remove();
 
-        yes.addEventListener("click", () => {
-            const payload = this.#collectPayload();
+        yes.addEventListener("click", async () => {
+            const fd = this.#collectFormData();
+
+            const res = await fetch("/api/avisos", {
+                method: "POST",
+                body: fd,
+            });
+            const json = await res.json();
+
             // Mensaje final en el propio modal:
             this.content.innerHTML = `
-        <div class="success-box">
-          <h2>Hemos recibido la información de adopción, muchas gracias y suerte!</h2>
-          <div style="margin-top:16px;">
-            <a href="index.html" class="btn-primary">Volver a la portada</a>
-          </div>
-        </div>
-      `;
-            this.onConfirm?.(payload);
+            <div class="success-box">
+              <h2>Hemos recibido la información de adopción, muchas gracias y suerte!</h2>
+              <div style="margin-top:16px;">
+                <a href="index.html" class="btn-primary">Volver a la portada</a>
+              </div>
+            </div>
+          `;
         });
 
         no.addEventListener("click", () => {
             cleanup(); // volver al formulario intacto
         });
     }
+
+    async #loadRegiones() {
+        const sel = this.refs.region;
+        if (!sel) return;
+
+        sel.innerHTML = "";
+        const opt0 = document.createElement("option");
+        opt0.value = "";
+        opt0.textContent = "Seleccionar región";
+        sel.appendChild(opt0);
+
+        try {
+            const res = await fetch("/api/regiones");
+            if (!res.ok) throw new Error("Error cargando regiones");
+            const json = await res.json();
+            (json.data || []).forEach(r => {
+                const o = document.createElement("option");
+                o.value = String(r.id);
+                o.textContent = r.nombre;
+                sel.appendChild(o);
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async #loadComunas(regionId) {
+        const sel = this.refs.comuna;
+        if (!sel) return;
+
+        sel.innerHTML = "";
+        const opt0 = document.createElement("option");
+        opt0.value = "";
+        opt0.textContent = "Seleccionar comuna";
+        sel.appendChild(opt0);
+
+        if (!Number.isFinite(regionId) || regionId <= 0) return;
+
+        try {
+            const res = await fetch(`/api/regiones/${regionId}/comunas`);
+            if (!res.ok) throw new Error("Error cargando comunas");
+            const json = await res.json();
+            (json.data || []).forEach(c => {
+                const o = document.createElement("option");
+                o.value = String(c.id);
+                o.textContent = c.nombre;
+                sel.appendChild(o);
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    }
 }
+
 
 window.AddModal = AddModal;
 

@@ -1,6 +1,7 @@
 from flask import Flask
 from .config import Config
 from .pages import pages_bp
+from .api import api_bp
 
 
 def create_app():
@@ -9,5 +10,6 @@ def create_app():
 
     # Blueprints
     app.register_blueprint(pages_bp)
+    app.register_blueprint(api_bp)
 
     return app

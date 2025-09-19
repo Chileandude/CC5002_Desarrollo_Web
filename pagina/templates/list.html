@@ -15,6 +15,13 @@
 <main id="main">
     <h1>Listado de Avisos de Adopción</h1>
     <div id="adoptions-list" class="adoptions-list"></div>
+    <div id="paginator" class="paginator" aria-label="Paginación">
+        <button id="pg-first" type="button">Primero</button>
+        <button id="pg-prev"  type="button" aria-label="Anterior">‹</button>
+        <span id="pg-info" aria-live="polite">1 de 1</span>
+        <button id="pg-next"  type="button" aria-label="Siguiente">›</button>
+        <button id="pg-last"  type="button">Último</button>
+    </div>
 </main>
 
 <!-- Lightbox global para fotos -->
@@ -34,11 +41,12 @@
     </figure>
 </div>
 <script src="{{ url_for('pages.routes_js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
 <!-- Dependencias -->
-<script src="{{ url_for('static', filename='js/data/dummy.js') }}"></script>
 <!-- Componentes -->
-<script src="{{ url_for('static', filename='js/components/AdoptionList.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/AdoptionList.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/ListView.js') }}"></script>
 <script>
     // Sidebar
     const menu = new MenuSidebar({openWidth: 140, closedWidth: 56, brandHtml: "🐾"});

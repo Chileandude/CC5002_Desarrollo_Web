@@ -67,6 +67,7 @@ class AddModal {
 
     close(reason = "manual") {
         if (!this.overlay) return;
+        this.#revokeAllObjectURLs();
         document.body.removeChild(this.overlay);
         this.overlay = null;
         this.content = null;
@@ -294,7 +295,7 @@ class AddModal {
 
     #fieldWrap(labelText, controlEl, required, opts = {}) {
         const wrap = document.createElement("div");
-        wrap.className = "form-field" + (opts.textarea ? "casoTextarea" : "");
+        wrap.className = "form-field" + (opts.textarea ? " casoTextarea" : "");
 
         const label = document.createElement("label");
         label.textContent = labelText + (required ? " *" : "");
@@ -372,16 +373,26 @@ class AddModal {
             if (!file) {
                 preview.src = "";
                 preview.style.display = "none";
+                this.#syncPhotoRequired();
                 return;
             }
 
             // Validación
-            if (!file.type.startsWith("image/")) {
+            if (!Validators.isImageFile(file)) {
                 alert("El archivo seleccionado no es una imagen.");
                 input.value = "";
                 preview.src = "";
                 preview.style.display = "none";
+                this.#syncPhotoRequired();
                 return;
+            }
+            if (!Validators.isAllowedImageExt(file.name)) {
+                alert("Extensión no permitida. Use .jpg, .jpeg o .png.");
+                input.value = "";
+                preview.src = "";
+                preview.style.display = "none";
+                this.#syncPhotoRequired();
+                return
             }
 
             // Genera y muestra el object URL
@@ -389,6 +400,7 @@ class AddModal {
             currentObjectUrl = url;
             preview.src = url;
             preview.style.display = "";
+            this.#syncPhotoRequired();
         });
 
         const removeBtn = document.createElement("button");
@@ -397,6 +409,7 @@ class AddModal {
         removeBtn.addEventListener("click", () => {
             if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
             list.removeChild(wrapper);
+            this.#syncPhotoRequired();
         });
 
         // Orden: preview | input file | quitar
@@ -466,6 +479,15 @@ class AddModal {
         if (err) err.textContent = msg;
     }
 
+    #revokeAllObjectURLs() {
+        try {
+            (this.refs.photosList?.querySelectorAll?.("img.photo-preview") || []).forEach(img => {
+                const src = img.getAttribute("src");
+                if (src && src.startsWith("blob:")) URL.revokeObjectURL(src);
+            });
+        } catch {}
+    }
+
     #syncPhotoRequired() {
         const inputs = this.#getPhotoInputs();
         const hasAnyFile = inputs.some(i => (i.files?.length ?? 0) > 0);
@@ -511,7 +533,8 @@ class AddModal {
             this.#setError(this.refs.email, "Email inválido");
             ok = false;
         }
-        if (!Validators.celIntl(this.refs.celular.value)) {
+        const celVal = (this.refs.celular.value || "").trim();
+        if (celVal && !Validators.celIntl(celVal)) {
             this.#setError(this.refs.celular, "Formato esperado: +NNN.NNNNNNNN");
             ok = false;
         }
@@ -633,12 +656,12 @@ class AddModal {
         const confirmBox = document.createElement("div");
         confirmBox.className = "confirm-box card";
         confirmBox.innerHTML = `
-      <p>¿Está seguro que desea agregar este aviso de adopción?</p>
-      <div class="confirm-actions">
-        <button type="button" class="btn-primary">Sí, estoy seguro</button>
-        <button type="button" class="btn-secondary">No, no estoy seguro, quiero volver al formulario</button>
-      </div>
-    `;
+            <p>¿Está seguro que desea agregar este aviso de adopción?</p>
+            <div class="confirm-actions">
+                <button type="button" class="btn-primary">Sí, estoy seguro</button>
+                <button type="button" class="btn-secondary">No, no estoy seguro, quiero volver al formulario</button>
+            </div>
+            `;
 
         const yes = confirmBox.querySelector(".btn-primary");
         const no = confirmBox.querySelector(".btn-secondary");
@@ -652,21 +675,34 @@ class AddModal {
         yes.addEventListener("click", async () => {
             const fd = this.#collectFormData();
 
-            const res = await fetch("/api/avisos", {
-                method: "POST",
-                body: fd,
-            });
-            const json = await res.json();
-
-            // Mensaje final en el propio modal:
-            this.content.innerHTML = `
-            <div class="success-box">
-              <h2>Hemos recibido la información de adopción, muchas gracias y suerte!</h2>
-              <div style="margin-top:16px;">
-                <a href="index.html" class="btn-primary">Volver a la portada</a>
-              </div>
-            </div>
-          `;
+            yes.disabled = true;
+            no.disabled = true;
+            try {
+                const res = await fetch("/api/avisos", {method: "POST", body: fd});
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    const detalles = Array.isArray(json?.errores) ? json.errores
+                        : (json?.error ? [json.error] : ["Error al crear el aviso."]);
+                    alert("No se pudo crear el aviso:\n- " + detalles.join("\n- "));
+                    yes.disabled = false;
+                    no.disabled = false;
+                    return;
+                }
+                const homeHref = (window.ROUTES?.home ?? "index.html");
+                this.content.innerHTML = `
+                    <div class="success-box">
+                        <h2>Hemos recibido la información de adopción, ¡gracias!</h2>
+                        <div style="margin-top:16px;">
+                            <a href="${homeHref}" class="btn-primary">Volver a la portada</a>
+                        </div>
+                    </div>
+                `;
+            } catch (err) {
+                console.error(err);
+                alert("Error de red al crear el aviso.");
+                yes.disabled = false;
+                no.disabled = false;
+            }
         });
 
         no.addEventListener("click", () => {

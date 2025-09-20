@@ -33,6 +33,17 @@ class Validators {
         if (!this.required(v) || !this.required(min)) return false;
         return v >= min; //formato YYYY-MM-DDThh:mm
     }
+    static isImageFile(file) {
+        if (!file) return false;
+        return !!file.type ? file.type.startsWith("image/") : true;
+    }
+    static isAllowedImageExt(filename) {
+        if (!filename) return false;
+        const i = filename.lastIndexOf(".");
+        if (i < 0) return false;
+        const ext = filename.slice(i).toLowerCase();
+        return [".jpg", ".jpeg", ".png"].includes(ext);
+    }
 }
 
 window.Validators = Validators;

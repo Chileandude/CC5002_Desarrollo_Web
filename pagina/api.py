@@ -1,4 +1,3 @@
-# pagina/api.py
 from typing import Any, Dict, List, Tuple
 from datetime import datetime
 
@@ -8,7 +7,7 @@ from sqlalchemy.orm import joinedload
 
 from .db import get_session
 from .models import AvisoAdopcion, Comuna, Region, ContactarPor, Foto
-from .upload import save_uploaded_file
+from .upload import save_uploaded_file, unidad_label, validate_aviso
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -175,7 +174,7 @@ def detalle_aviso(aviso_id: int):
                 joinedload(AvisoAdopcion.fotos),
                 joinedload(AvisoAdopcion.contactos),
             )
-            .where(AvisoAdopcion.id == aviso_id)
+            .where(AvisoAdopcion.id == aviso_id)  # type: ignore[arg-type]
         )
         row = s.execute(stmt).first()
 
@@ -198,7 +197,7 @@ def listar_comunas(region_id: int):
     with get_session() as s:
         rows = s.execute(
             select(Comuna.id, Comuna.nombre)
-            .where(Comuna.region_id == region_id)
+            .where(Comuna.region_id == region_id)  # type: ignore[arg-type]
             .order_by(Comuna.nombre.asc())
         ).all()
         data = [{"id": c.id, "nombre": c.nombre} for c in rows]
@@ -209,137 +208,69 @@ def listar_comunas(region_id: int):
 def crear_aviso():
     """
     Crea un aviso + guarda fotos.
-    Espera multipart/form-data:
-      - region (nombre de región)
-      - comuna_id (int) O comuna_nombre (str)
-      - sector (str)
-      - nombre (str)
-      - email (str)
-      - celular (str)
-      - tipo ('Gato'|'Perro' o 'gato'|'perro')
-      - cantidad (int)
-      - edad (int)
-      - unidad_edad ('meses'|'años')
-      - fecha_entrega ('YYYY-MM-DDTHH:mm')
-      - descripcion (str)
-      - contactos[nombre][] + contactos[identificador][]  (opcional arrays paralelos)
-      - fotos[] (varias imágenes)
+    Espera multipart/form-data (ver docstring original).
     """
     form = request.form
     files = request.files
 
-    # Campos básicos
-    tipo_in = (form.get("tipo") or "").strip().lower()
-    if tipo_in in ("gato", "gatito"):
-        tipo = "gato"
-    else:
-        tipo = "perro"  # default conservador si el front ya valida
-
-    try:
-        cantidad = int(form.get("cantidad", "1"))
-    except ValueError:
-        cantidad = 1
-
-    try:
-        edad = int(form.get("edad", "1"))
-    except ValueError:
-        edad = 1
-
-    unidad = _unidad_from_front(form.get("unidad_edad"))
-    fecha_entrega_raw = form.get("fecha_entrega")  # viene como YYYY-MM-DDTHH:mm
-    try:
-        fecha_entrega = datetime.strptime(fecha_entrega_raw, "%Y-%m-%dT%H:%M")
-    except Exception:
-        return jsonify({"error": "fecha_entrega inválida (usar YYYY-MM-DDTHH:mm)"}), 400
-
-    comuna_id = form.get("comuna_id")
-    comuna_nombre = form.get("comuna_nombre")
-
     with get_session() as s:
-        comuna: Comuna | None = None
-        if comuna_id:
-            try:
-                comuna = s.get(Comuna, int(comuna_id))
-            except ValueError:
-                comuna = None
-        elif comuna_nombre:
-            comuna = s.execute(select(Comuna).where(Comuna.nombre == comuna_nombre)).scalar_one_or_none()
+        data, errs = validate_aviso(form, files, s)
+        if errs:
+            return jsonify({"errores": errs}), 400
 
-        if not comuna:
-            return jsonify({"error": "Comuna no encontrada"}), 400
-
+        # Persistencia
         aviso = AvisoAdopcion(
             fecha_ingreso=datetime.now(),
-            comuna_id=comuna.id,
-            sector=(form.get("sector") or None),
-            nombre=form.get("nombre") or "",
-            email=form.get("email") or "",
-            celular=(form.get("celular") or None),
-            tipo=tipo,
-            cantidad=cantidad,
-            edad=edad,
-            unidad_medida=unidad,
-            fecha_entrega=fecha_entrega,
-            descripcion=(form.get("descripcion") or None),
+            comuna_id=data["comuna"].id,
+            sector=data["sector"],
+            nombre=data["nombre"],
+            email=data["email"],
+            celular=data["celular"],
+            tipo=data["tipo"],  # 'gato' | 'perro'
+            cantidad=data["cantidad"],
+            edad=data["edad"],
+            unidad_medida=data["unidad"],  # 'm' | 'a' (DB enum/char)
+            fecha_entrega=data["fecha_entrega"],
+            descripcion=data["descripcion"],
         )
         s.add(aviso)
-        s.flush()  # para obtener aviso.id
+        s.flush()  # obtener aviso.id
 
-        # Contactos opcionales (par de arrays)
-        # contactos[nombre][]=instagram  contactos[identificador][]=@miCuenta
-        contactos_nombre = request.form.getlist("contactos[nombre][]")
-        contactos_ident = request.form.getlist("contactos[identificador][]")
-        for via, ident in zip(contactos_nombre, contactos_ident):
-            via_norm = (via or "").strip().lower()
-            # normaliza 'twitter'->'X'
-            if via_norm == "twitter" or via_norm == "x":
-                via_db = "X"
-            elif via_norm == "whatsapp":
-                via_db = "whatsapp"
-            elif via_norm == "telegram":
-                via_db = "telegram"
-            elif via_norm == "instagram":
-                via_db = "instagram"
-            elif via_norm == "tiktok":
-                via_db = "tiktok"
-            else:
-                via_db = "otra"
-
+        # Contactos (si vienen)
+        for c in data["contactos"]:
             s.add(ContactarPor(
-                nombre=via_db,
-                identificador=(ident or "")[:150],
-                aviso_id=aviso.id
+                nombre=c["via"],  # 'X' | 'whatsapp' | ...
+                identificador=c["id"],
+                aviso_id=aviso.id,
             ))
 
         # Fotos
         upload_folder = current_app.config["UPLOAD_FOLDER"]
-        fotos_files = files.getlist("fotos[]")
-        for f in fotos_files:
-            if not f or not f.filename:
-                continue
+        for f in data["fotos_files"]:
             nombre_archivo = save_uploaded_file(
-                f, upload_folder=upload_folder, tipo=tipo, edad=edad, unidad=unidad
+                f,
+                upload_folder=upload_folder,
+                tipo=data["tipo"],
+                edad=data["edad"],
+                unidad=data["unidad"],
             )
-            # Guardamos en BD apuntando a /static/uploads/<nombre>
             s.add(Foto(
                 ruta_archivo="static/uploads",
                 nombre_archivo=nombre_archivo,
-                aviso_id=aviso.id
+                aviso_id=aviso.id,
             ))
 
         s.commit()
 
-        # Serializa para respuesta
-        # (re-usa tu serializer existente)
-        # Trae region y comuna para el JSON final
-        region = s.get(Region, comuna.region_id)
-        fotos_urls = [f"/static/uploads/{f.nombre_archivo}" for f in aviso.fotos]
-        contactos = [{"via": c.nombre, "id": c.identificador} for c in aviso.contactos]
+        # Respuesta
+        region = s.get(Region, data["comuna"].region_id)
+        fotos_urls = [f"/static/uploads/{f.nombre_archivo}" for f in (aviso.fotos or [])]
+        contactos = [{"via": c.nombre, "id": c.identificador} for c in (aviso.contactos or [])]
 
         return jsonify({
             "id": aviso.id,
             "region": region.nombre if region else None,
-            "comuna": comuna.nombre,
+            "comuna": data["comuna"].nombre,
             "sector": aviso.sector,
             "contacto_nombre": aviso.nombre,
             "contacto_email": aviso.email,
@@ -348,11 +279,9 @@ def crear_aviso():
             "tipo": aviso.tipo,
             "cantidad": aviso.cantidad,
             "edad": aviso.edad,
-            "edad_unidad": aviso.unidad_medida,
+            "edad_unidad": unidad_label(aviso.unidad_medida),  # 'meses' | 'años'
             "fecha_disponible": aviso.fecha_entrega.strftime("%Y-%m-%d %H:%M"),
             "creado_en": aviso.fecha_ingreso.strftime("%Y-%m-%d %H:%M"),
             "descripcion": aviso.descripcion,
             "fotos": fotos_urls,
         }), 201
-
-

@@ -11,8 +11,17 @@
 
         static #fmt(dt) {
             if (!dt) return "—";
-            // esperamos "YYYY-MM-DDTHH:mm"
-            return String(dt).replace("T", " ");
+            const t = Date.parse(String(dt).replace(" ", "T"));
+            if (Number.isNaN(t)) return "—";
+            const d = new Date(t);
+            return d.toLocaleString("es-CL", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            });
         }
 
         /**

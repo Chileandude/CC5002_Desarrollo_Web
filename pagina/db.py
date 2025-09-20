@@ -3,16 +3,16 @@ from contextlib import contextmanager
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from .config import Config
 
 # Credenciales indicadas
-DB_URL = "mysql+pymysql://cc5002:programacionweb@localhost:3306/tarea2?charset=utf8"
+DB_URL = Config.SQLALCHEMY_DATABASE_URI
 
 
 class Base(DeclarativeBase):
     pass
 
 
-# Engine: no creamos tablas; solo nos conectamos
 engine = create_engine(
     DB_URL,
     echo=False,

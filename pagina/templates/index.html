@@ -38,7 +38,6 @@
 <script src="{{ url_for('pages.routes_js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/validators.js') }}"></script>
-<script src="{{ url_for('static', filename='js/data/cl-regions.js') }}"></script>
 
 <!-- Componentes -->
 <script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>
@@ -53,10 +52,6 @@
 
     // Modal
     const modal = new AddModal({
-        onConfirm: () => {
-            alert("Hemos recibido la información de adopción, muchas gracias y suerte!");
-            modal.close();
-        },
         onCancel: (reason) => {
             console.log("Modal cerrado por:", reason);
         }

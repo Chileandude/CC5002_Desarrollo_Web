@@ -1,5 +1,6 @@
 import os
 
+
 class Config:
     MYSQL_USER = "cc5002"
     MYSQL_PASSWORD = "programacionweb"

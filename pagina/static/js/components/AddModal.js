@@ -1,4 +1,20 @@
 // Requiere: window.Validators
+/**
+ * Modal para agregar un aviso de adopción.
+ *
+ * @summary
+ * - Construye el formulario por secciones (¿Dónde?, ¿Contacto?, ¿Mascota?)
+ * - Valida campos con window.Validators
+ * - Ensambla FormData y lo envía a /api/avisos
+ * - Maneja previsualización de fotos con Object URLs (y las revoca)
+ *
+ * @example
+ * const modal = new AddModal({
+ *   onConfirm: (payload) => console.log('confirmado', payload),
+ *   onCancel: (reason) => console.log('cancel', reason),
+ * });
+ * modal.open();
+ */
 class AddModal {
     /**
      * @param {Object} [opts]
@@ -24,6 +40,7 @@ class AddModal {
         this.refs = {}; // referencias a inputs
     }
 
+    /** Abre el modal y monta el DOM. */
     open() {
         if (this.overlay) return; // ya abierto
         this.overlay = document.createElement("div");
@@ -65,6 +82,11 @@ class AddModal {
         });
     }
 
+    /**
+     * Cierra el modal, revoca Object URLs y dispara onCancel.
+     * @param {"user"|"auto"|"manual"} [reason="manual"]
+     * @returns {void}
+     */
     close(reason = "manual") {
         if (!this.overlay) return;
         this.#revokeAllObjectURLs();
@@ -75,7 +97,7 @@ class AddModal {
         this.onCancel?.(reason);
     }
 
-    // ============ UI ============
+    /** Crea el formulario principal. */
     #buildForm() {
         const form = document.createElement("form");
         form.className = "ad-form";
@@ -154,11 +176,7 @@ class AddModal {
         celular.placeholder = "+NNN.NNNNNNNN";
         this.refs.celular = celular;
 
-        r1.append(
-            this.#fieldWrap("Nombre", nombre, true),
-            this.#fieldWrap("Email", email, true),
-            this.#fieldWrap("Número de celular", celular, false),
-        );
+        r1.append(this.#fieldWrap("Nombre", nombre, true), this.#fieldWrap("Email", email, true), this.#fieldWrap("Número de celular", celular, false),);
 
         const r2 = this.#row();
 
@@ -182,10 +200,7 @@ class AddModal {
         list.className = "social-list";
         this.refs.socialList = list;
 
-        r2.append(
-            this.#fieldWrap("Contactar por (máx 5)", holder, false),
-            this.#fieldWrap("Contactos agregados", list, false),
-        );
+        r2.append(this.#fieldWrap("Contactar por (máx 5)", holder, false), this.#fieldWrap("Contactos agregados", list, false),);
 
         sec.append(r1, r2);
         return sec;
@@ -224,12 +239,7 @@ class AddModal {
         });
         this.refs.unidadEdad = unidad;
 
-        r1.append(
-            this.#fieldWrap("Tipo", tipo, true),
-            this.#fieldWrap("Cantidad", cantidad, true),
-            this.#fieldWrap("Edad", edad, true),
-            this.#fieldWrap("Unidad medida edad", unidad, true),
-        );
+        r1.append(this.#fieldWrap("Tipo", tipo, true), this.#fieldWrap("Cantidad", cantidad, true), this.#fieldWrap("Edad", edad, true), this.#fieldWrap("Unidad medida edad", unidad, true),);
 
         const r2 = this.#row();
         const dt = this.#input("datetime-local", true);
@@ -328,6 +338,10 @@ class AddModal {
         return s;
     }
 
+    /**
+     * Devuelve ahora + 3 horas en formato 'YYYY-MM-DDThh:mm'.
+     * @returns {string}
+     */
     #nowPlus3h() {
         const d = new Date(Date.now() + 3 * 3600 * 1000);
         const pad = (n) => String(n).padStart(2, "0");
@@ -335,6 +349,7 @@ class AddModal {
         // formato YYYY-MM-DDThh:mm
     }
 
+    /** Agrega una tarjeta de foto (preview + input + quitar). */
     #addPhotoItem() {
         const list = this.refs.photosList;
         if (!list) return;
@@ -421,12 +436,14 @@ class AddModal {
 
     #getPhotoInputs() {
         const container = this.refs.photosList || this.refs.photosWrap || null;
-        return container
-            ? Array.from(container.querySelectorAll('input[type="file"]'))
-            : [];
+        return container ? Array.from(container.querySelectorAll('input[type="file"]')) : [];
     }
 
-
+    /**
+     * Agrega un “contacto por” a la lista.
+     * @param {string} network
+     * @returns {void}
+     */
     #addSocial(network) {
         if (!network) return;
         const list = this.refs.socialList;
@@ -467,11 +484,19 @@ class AddModal {
     }
 
     // ============ Validación + Submit ============
+
+    /** Limpia mensajes de error visibles. */
     #clearErrors() {
         if (!this.overlay) return;
         this.overlay.querySelectorAll(".field-error").forEach((e) => (e.textContent = ""));
     }
 
+    /**
+     * Muestra un error bajo el control indicado.
+     * @param {HTMLElement} inputEl
+     * @param {string} msg
+     * @returns {void}
+     */
     #setError(inputEl, msg) {
         const field = inputEl.closest(".form-field");
         if (!field) return;
@@ -479,15 +504,18 @@ class AddModal {
         if (err) err.textContent = msg;
     }
 
+    /** Revoca todos los Object URLs usados en previews. */
     #revokeAllObjectURLs() {
         try {
             (this.refs.photosList?.querySelectorAll?.("img.photo-preview") || []).forEach(img => {
                 const src = img.getAttribute("src");
                 if (src && src.startsWith("blob:")) URL.revokeObjectURL(src);
             });
-        } catch {}
+        } catch {
+        }
     }
 
+    /** Ajusta `required` en inputs de fotos según haya o no archivos. */
     #syncPhotoRequired() {
         const inputs = this.#getPhotoInputs();
         const hasAnyFile = inputs.some(i => (i.files?.length ?? 0) > 0);
@@ -505,6 +533,10 @@ class AddModal {
         }
     }
 
+    /**
+     * Valida todos los campos y muestra errores.
+     * @returns {boolean}
+     */
     #validate() {
         this.#clearErrors();
         let ok = true;
@@ -601,6 +633,10 @@ class AddModal {
         return ok;
     }
 
+    /**
+     * Recolecta datos desde el formulario y los mapea a FormData.
+     * @returns {FormData}
+     */
     #collectFormData() {
         // contactos
         const socialItems = Array.from(this.refs.socialList.querySelectorAll(".social-item"))
@@ -612,9 +648,7 @@ class AddModal {
 
         // fotos
         const photosContainer = this.refs.photosList || this.refs.photosWrap || null;
-        const photoInputs = photosContainer
-            ? Array.from(photosContainer.querySelectorAll('input[type="file"]'))
-            : [];
+        const photoInputs = photosContainer ? Array.from(photosContainer.querySelectorAll('input[type="file"]')) : [];
         const files = photoInputs.flatMap(i => Array.from(i.files ?? []));
 
         // mapear UI -> API
@@ -649,6 +683,7 @@ class AddModal {
         return fd;
     }
 
+    /** Maneja el submit: confirma y envía a /api/avisos. */
     #onSubmit() {
         if (!this.#validate()) return;
 
@@ -681,8 +716,7 @@ class AddModal {
                 const res = await fetch("/api/avisos", {method: "POST", body: fd});
                 const json = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                    const detalles = Array.isArray(json?.errores) ? json.errores
-                        : (json?.error ? [json.error] : ["Error al crear el aviso."]);
+                    const detalles = Array.isArray(json?.errores) ? json.errores : (json?.error ? [json.error] : ["Error al crear el aviso."]);
                     alert("No se pudo crear el aviso:\n- " + detalles.join("\n- "));
                     yes.disabled = false;
                     no.disabled = false;
@@ -710,6 +744,7 @@ class AddModal {
         });
     }
 
+    /** Carga regiones en el select correspondiente. */
     async #loadRegiones() {
         const sel = this.refs.region;
         if (!sel) return;
@@ -735,6 +770,11 @@ class AddModal {
         }
     }
 
+    /**
+     * Carga comunas según región.
+     * @param {number} regionId
+     * @returns {Promise<void>}
+     */
     async #loadComunas(regionId) {
         const sel = this.refs.comuna;
         if (!sel) return;

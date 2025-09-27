@@ -15,6 +15,16 @@ ViaContacto = Enum("whatsapp", "telegram", "X", "instagram", "tiktok", "otra",
 
 
 class Region(Base):
+    """
+    Modelo Región.
+      - Campos:
+        - id: int
+        - nombre: str (≤200)
+      - Relaciones:
+        - comunas: List[Comuna]
+    ->
+      - Tabla 'tarea2.region'
+    """
     __tablename__ = "region"
     __table_args__ = {"schema": SCHEMA}
 
@@ -25,6 +35,18 @@ class Region(Base):
 
 
 class Comuna(Base):
+    """
+    Modelo Comuna.
+      - Campos:
+        - id: int
+        - nombre: str (≤200)
+        - region_id: int (FK → region.id)
+      - Relaciones:
+        - region: Region
+        - avisos: List[AvisoAdopcion]
+    ->
+      - Tabla 'tarea2.comuna'
+    """
     __tablename__ = "comuna"
     __table_args__ = {"schema": SCHEMA}
 
@@ -42,6 +64,29 @@ class Comuna(Base):
 
 
 class AvisoAdopcion(Base):
+    """
+    Modelo Aviso de Adopción.
+      - Campos:
+        - id: int
+        - fecha_ingreso: datetime
+        - comuna_id: int (FK → comuna.id)
+        - sector: Optional[str] (≤100)
+        - nombre: str (≤200)
+        - email: str (≤100)
+        - celular: Optional[str] (≤15)
+        - tipo: Mapped[str] ('gato'|'perro')
+        - cantidad: int
+        - edad: int
+        - unidad_medida: Mapped[str] ('a'|'m')
+        - fecha_entrega: datetime
+        - descripcion: Optional[str] (Text, ≤500)
+      - Relaciones:
+        - comuna: Comuna
+        - fotos: List[Foto]
+        - contactos: List[ContactarPor]
+    ->
+      - Tabla 'tarea2.aviso_adopcion'
+    """
     __tablename__ = "aviso_adopcion"
     __table_args__ = {"schema": SCHEMA}
 
@@ -79,6 +124,18 @@ class AvisoAdopcion(Base):
 
 
 class Foto(Base):
+    """
+    Modelo Foto asociada a un aviso.
+      - Campos:
+        - id: int (PK parte 1)
+        - ruta_archivo: str (≤300)
+        - nombre_archivo: str (≤300)
+        - aviso_id: int (PK parte 2, FK → aviso_adopcion.id)
+      - Relaciones:
+        - aviso: AvisoAdopcion
+    ->
+      - Tabla 'tarea2.foto' (PK compuesta: id, aviso_id)
+    """
     __tablename__ = "foto"
     __table_args__ = {"schema": SCHEMA}
 
@@ -98,6 +155,18 @@ class Foto(Base):
 
 
 class ContactarPor(Base):
+    """
+    Modelo de medio de contacto de un aviso.
+      - Campos:
+        - id: int (PK parte 1)
+        - nombre: Mapped[str] ('whatsapp'|'telegram'|'X'|'instagram'|'tiktok'|'otra')
+        - identificador: str (≤150)
+        - aviso_id: int (PK parte 2, FK → aviso_adopcion.id)
+      - Relaciones:
+        - aviso: AvisoAdopcion
+    ->
+      - Tabla 'tarea2.contactar_por' (PK compuesta: id, aviso_id)
+    """
     __tablename__ = "contactar_por"
     __table_args__ = {"schema": SCHEMA}
 

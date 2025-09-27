@@ -10,6 +10,7 @@ DB_URL = Config.SQLALCHEMY_DATABASE_URI
 
 
 class Base(DeclarativeBase):
+    """Declarative base para los modelos ORM."""
     pass
 
 
@@ -25,7 +26,13 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expi
 
 @contextmanager
 def get_session() -> Iterator[SessionLocal]:
-    """Context manager para sesiones seguras."""
+    """
+    Context manager que abre una sesión ORM
+    y rollback ante excepciones.
+      - (None)
+    ->
+      - Iterator[Session] — Iterador de contexto que produce una Session activa.
+    """
     session = SessionLocal()
     try:
         yield session

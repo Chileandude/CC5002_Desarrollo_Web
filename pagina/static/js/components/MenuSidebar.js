@@ -1,3 +1,16 @@
+/**
+ * Barra lateral de navegación colapsable con control de foco y backdrop.
+ *
+ * @summary
+ * - Ancho abierto/cerrado configurable
+ * - Sin dependencias; controla `margin-left` del #main
+ * - Accesible: aria-expanded/aria-hidden, foco, Escape para cerrar
+ * - Cierra al hacer click fuera (backdrop) o al navegar en móvil
+ *
+ * @example
+ * const menu = new MenuSidebar({ openWidth: 140, closedWidth: 56, brandHtml: "🐾" });
+ * document.getElementById("menu-container").appendChild(menu.render());
+ */
 class MenuSidebar {
     /**
      * @param {Object} [opts]
@@ -27,6 +40,10 @@ class MenuSidebar {
         this._onKeydown = this._onKeydown.bind(this);
     }
 
+    /**
+     * Crea el DOM de la barra y enlaza listeners.
+     * @returns {HTMLElement} Contenedor <aside> de la barra lateral.
+     */
     render() {
         this.container = document.createElement("aside");
         this.container.className = "sidenav sidenav--closed";
@@ -37,8 +54,8 @@ class MenuSidebar {
 
         // Fallback seguro
         const R = (window.ROUTES ?? {});
-        const hrefHome  = R.home  ?? "#";
-        const hrefList  = R.list  ?? "#";
+        const hrefHome = R.home ?? "#";
+        const hrefList = R.list ?? "#";
         const hrefStats = R.stats ?? "#";
 
         this.container.innerHTML = `
@@ -68,14 +85,13 @@ class MenuSidebar {
         return this.container;
     }
 
-    /** listeners internos */
+    /** Listeners internos y cacheo del botón de toggle. */
     _bindEvents() {
         const btn = this.container.querySelector(".sidenav__toggle");
         if (btn) {
             btn.addEventListener("click", () => this.toggle());
             this._toggleBtn = btn;
         }
-        // Cerrar al navegar (útil en móvil), sin tocar estilos
         this.container.querySelectorAll(".sidenav__links a").forEach(a => {
             a.addEventListener("click", () => {
                 if (window.innerWidth < 900) this.close();
@@ -83,7 +99,7 @@ class MenuSidebar {
         });
     }
 
-    /** Crea el backdrop  */
+    /** Crea el backdrop si no existe. */
     _ensureBackdrop() {
         if (this.backdrop) return;
         const bd = document.createElement("div");
@@ -94,7 +110,11 @@ class MenuSidebar {
         this.backdrop = bd;
     }
 
-    /** Cerrar con tecla Escape cuando está abierta */
+    /**
+     * Maneja Escape para cerrar cuando está abierta.
+     * @param {KeyboardEvent} e
+     * @returns {void}
+     */
     _onKeydown(e) {
         if (this.isOpen && e.key === "Escape") this.close();
     }
@@ -134,8 +154,7 @@ class MenuSidebar {
 
         if (this.mainEl) {
             // restaurar el margen previo si existía; si no, usar ancho cerrado
-            this.mainEl.style.marginLeft =
-                this._prevMainMarginLeft !== "" ? this._prevMainMarginLeft : `${this.closedWidth}px`;
+            this.mainEl.style.marginLeft = this._prevMainMarginLeft !== "" ? this._prevMainMarginLeft : `${this.closedWidth}px`;
         }
         if (this.backdrop) this.backdrop.classList.remove("is-visible");
         document.body.style.overflow = "";

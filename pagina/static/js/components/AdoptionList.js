@@ -25,7 +25,7 @@
             const d = new Date(iso);
             if (Number.isNaN(d.getTime())) return "—";
             const fecha = d.toLocaleDateString("es-CL");
-            const hora = d.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"});
+            const hora = d.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit", hour12: false});
             return `${fecha} ${hora}`;
         },
         /** @param {number|undefined} e @param {string|undefined} u */
@@ -55,16 +55,17 @@
     };
 
     class PhotoLightbox {
-        /** @param {HTMLElement} root */
         constructor(root) {
+            if (!root) {
+                this.disabled = true;
+                return;
+            }
             this.root = root;
-            /** @type {HTMLImageElement} */
             this.img = root.querySelector("#lightbox-img");
-            /** @type {HTMLElement} */
             this.caption = root.querySelector("#lightbox-caption");
 
             root.addEventListener("click", (ev) => {
-                const t = /** @type {HTMLElement} */ (ev.target);
+                const t = ev.target;
                 if (t.matches("[data-close]") || t.classList.contains("photo-lightbox__backdrop")) {
                     this.close();
                 }
@@ -74,20 +75,18 @@
             });
         }
 
-        /**
-         * @param {string} src
-         * @param {string} [caption]
-         */
         open(src, caption = "") {
+            if (this.disabled || !this.root || !this.img || !this.caption) return;
             this.img.src = src;
             this.caption.textContent = caption;
             this.root.setAttribute("aria-hidden", "false");
         }
 
         close() {
-            this.root.setAttribute("aria-hidden", "true");
+            if (this.disabled || !this.root || !this.img || !this.caption) return;
             this.img.src = "";
             this.caption.textContent = "";
+            this.root.setAttribute("aria-hidden", "true");
         }
     }
 
@@ -107,7 +106,7 @@
 
         render() {
             this.mountEl.innerHTML = "";
-
+            this.detailsMap.clear();
             const scroll = document.createElement("div");
             scroll.className = "adoptions-scroll";
 
@@ -228,11 +227,19 @@
             // Información extendida
             const info = document.createElement("div");
             info.className = "adoption-details__info";
-            info.innerHTML = `
-      <div><strong>Región:</strong> ${item.region ?? "—"}</div>
-      <div><strong>Contacto:</strong> ${AdoptionListFmt.contacto(item)}</div>
-      <div><strong>Descripción:</strong> ${item.descripcion ?? "—"}</div>
-    `;
+            const r1 = document.createElement("div");
+            r1.innerHTML = "<strong>Región:</strong> ";
+            r1.appendChild(document.createTextNode(item.region ?? "—"));
+
+            const r2 = document.createElement("div");
+            r2.innerHTML = "<strong>Contacto:</strong> ";
+            r2.appendChild(document.createTextNode(AdoptionListFmt.contacto(item)));
+
+            const r3 = document.createElement("div");
+            r3.innerHTML = "<strong>Descripción:</strong> ";
+            r3.appendChild(document.createTextNode(item.descripcion ?? "—"));
+
+            info.append(r1, r2, r3);
             wrap.appendChild(info);
 
             // Galería de fotos (thumbnails 320x240)
@@ -256,12 +263,22 @@
                     img.height = 240;
                     img.loading = "lazy";
                     img.decoding = "async";
+                    img.tabIndex = 0;
 
                     img.addEventListener("click", () => {
                         this.lightbox.open(
                             src,
                             `${item.tipo ?? "aviso"} — Foto ${idx + 1}/${fotos.length}`
                         );
+                    });
+                    img.addEventListener("keydown", (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            this.lightbox.open(
+                                src,
+                                `${item.tipo ?? "aviso"} — Foto ${idx + 1}/${fotos.length}`
+                            );
+                        }
                     });
 
                     fig.appendChild(img);

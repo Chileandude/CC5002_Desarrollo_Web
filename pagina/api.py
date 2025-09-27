@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 from datetime import datetime
 
 from flask import Blueprint, request, jsonify, current_app
@@ -16,6 +16,12 @@ FMT = "%Y-%m-%d %H:%M"
 
 
 def _fmt(dt: datetime | None) -> str | None:
+    """
+    Formatea datetime a '%Y-%m-%d %H:%M'.
+      - dt: datetime | None — Fecha/hora a formatear.
+    ->
+      - str | None — Cadena formateada o None si dt es None.
+    """
     if dt is None:
         return None
     return dt.strftime(FMT)
@@ -23,15 +29,16 @@ def _fmt(dt: datetime | None) -> str | None:
 
 def _build_photo_url(ruta_archivo: str, nombre_archivo: str) -> str:
     """
-    En BD tenemos 'ruta_archivo' + 'nombre_archivo'.
-    El front espera strings servibles. Asumimos rutas tipo 'static/uploads' o '/static/uploads'.
-    Normalizamos a '/static/...'.
+    Normaliza la ruta+nombre de archivo a una URL servible '/static/...'.
+      - ruta_archivo: str — Carpeta guardada en BD (p. ej. 'static/uploads' o '/static/uploads').
+      - nombre_archivo: str — Nombre del archivo.
+    ->
+      - str — URL relativa tipo '/static/…' o cadena vacía si faltan datos.
     """
     ruta = (ruta_archivo or "").strip()
     nombre = (nombre_archivo or "").strip()
     if not ruta or not nombre:
         return ""
-    # Asegurar prefijo "/" y un único separador
     base = ruta if ruta.startswith("/") else f"/{ruta}"
     if not base.endswith("/"):
         base = f"{base}/"
@@ -39,6 +46,12 @@ def _build_photo_url(ruta_archivo: str, nombre_archivo: str) -> str:
 
 
 def _serialize_row(row: Tuple[AvisoAdopcion, Comuna, Region]) -> Dict[str, Any]:
+    """
+    Serializa un join (Aviso, Comuna, Región) al dict esperado por el front.
+      - row: tuple(AvisoAdopcion, Comuna, Region) — Fila del SELECT con joins.
+    ->
+      - dict[str, Any] — Objeto listo para JSON (keys: id, region, comuna, …).
+    """
     aviso, comuna, region = row
     fotos = [_build_photo_url(f.ruta_archivo, f.nombre_archivo) for f in aviso.fotos]
     contactos = [{"via": c.nombre, "id": c.identificador} for c in aviso.contactos]
@@ -65,7 +78,10 @@ def _serialize_row(row: Tuple[AvisoAdopcion, Comuna, Region]) -> Dict[str, Any]:
 
 def _unidad_from_front(unidad_front: str | None) -> str:
     """
-    'meses'/'años' -> 'm'/'a'
+    Mapea etiqueta del front a unidad corta.
+      - unidad_front: str | None — 'meses'/'años'.
+    ->
+      - str — 'm' para meses, 'a' para años (default 'm' si vacía).
     """
     if not unidad_front:
         return "m"
@@ -79,11 +95,12 @@ def _unidad_from_front(unidad_front: str | None) -> str:
 def listar_avisos():
     """
     Listado paginado de avisos.
-    Query params:
-      - page: int >= 1 (default 1)
-      - size: int [1..50] (default 5)
+      - Query:
+          - page: int >= 1 (default 1)
+          - size: int [1..50] (default 5)
+    ->
+      - ResponseReturnValue — JSON con {data, page, size, total_items, total_pages}.
     """
-    # Sanitizar page/size
     try:
         page = int(request.args.get("page", "1"))
         size = int(request.args.get("size", "5"))
@@ -132,8 +149,10 @@ def listar_avisos():
 def ultimos_avisos():
     """
     Últimos N avisos por fecha_ingreso desc.
-    Query params:
-      - limit: int [1..10] (default 5)
+      - Query:
+          - limit: int [1..10] (default 5)
+    ->
+      - ResponseReturnValue — JSON con {"data": [...]}.
     """
     try:
         limit = int(request.args.get("limit", "5"))
@@ -156,7 +175,7 @@ def ultimos_avisos():
             .order_by(AvisoAdopcion.fecha_ingreso.desc(), AvisoAdopcion.id.desc())
             .limit(limit)
         )
-        rows = s.execute(stmt).unique().all()
+        rows: List[Tuple[AvisoAdopcion, Comuna, Region]] = s.execute(stmt).unique().all()
         data = [_serialize_row(r) for r in rows]
 
     return jsonify({"data": data})
@@ -164,7 +183,12 @@ def ultimos_avisos():
 
 @api_bp.get("/avisos/<int:aviso_id>")
 def detalle_aviso(aviso_id: int):
-    """Detalle de un aviso por id."""
+    """
+    Detalle de un aviso por ID.
+      - aviso_id: int — Identificador del aviso.
+    ->
+      - ResponseReturnValue — JSON con el aviso serializado o 404.
+    """
     with get_session() as s:
         stmt = (
             select(AvisoAdopcion, Comuna, Region)
@@ -186,6 +210,12 @@ def detalle_aviso(aviso_id: int):
 
 @api_bp.get("/regiones")
 def listar_regiones():
+    """
+    Lista todas las regiones (id, nombre) ordenadas alfabéticamente.
+      - (None)
+    ->
+      - ResponseReturnValue — JSON con {"data": [{"id", "nombre"}, ...]}.
+    """
     with get_session() as s:
         rows = s.execute(select(Region.id, Region.nombre).order_by(Region.nombre.asc())).all()
         data = [{"id": r.id, "nombre": r.nombre} for r in rows]
@@ -194,6 +224,12 @@ def listar_regiones():
 
 @api_bp.get("/regiones/<int:region_id>/comunas")
 def listar_comunas(region_id: int):
+    """
+    Lista comunas de una región.
+      - region_id: int — ID de la región.
+    ->
+      - ResponseReturnValue — JSON con {"data": [{"id", "nombre"}, ...]}.
+    """
     with get_session() as s:
         rows = s.execute(
             select(Comuna.id, Comuna.nombre)
@@ -207,8 +243,10 @@ def listar_comunas(region_id: int):
 @api_bp.post("/avisos")
 def crear_aviso():
     """
-    Crea un aviso + guarda fotos.
-    Espera multipart/form-data (ver docstring original).
+    Crea un aviso y guarda sus fotos.
+      - Body: multipart/form-data (ver validaciones en validate_aviso()).
+    ->
+      - ResponseReturnValue — JSON con el aviso creado (201) o errores (400).
     """
     form = request.form
     files = request.files

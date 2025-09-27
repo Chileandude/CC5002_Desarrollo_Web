@@ -20,9 +20,15 @@ def stats_view():
 
 @pages_bp.route("/routes.js", methods=["GET"])
 def routes_js():
+    """
+    Devuelve un JS con las rutas públicas (window.ROUTES).
+      - (None)
+    ->
+      - ResponseReturnValue — Respuesta con mimetype application/javascript.
+    """
     js = f"""window.ROUTES = {{
-  home: "{url_for('pages.index')}",
-  list: "{url_for('pages.list_view')}",
-  stats: "{url_for('pages.stats_view')}"
-}};"""
+        home: "{url_for('pages.index')}",
+        list: "{url_for('pages.list_view')}",
+        stats: "{url_for('pages.stats_view')}"
+    }};"""
     return Response(js, mimetype="application/javascript")

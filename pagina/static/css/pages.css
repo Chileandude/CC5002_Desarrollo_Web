@@ -1,4 +1,6 @@
-/* Reglas específicas para la portada */
+/* ===== Reglas específicas de páginas ===== */
+
+/* ===== Portada (page-home) ===== */
 .page-home #last-ads-title {
   font-size: 60px;
   text-align: center;
@@ -15,6 +17,7 @@
   margin-bottom: 8px;
 }
 
+/* Wrapper centrado y ancho controlado */
 .page-home #main .main__inner {
   width: clamp(280px, 76vw, 980px);
   margin: 0 auto;              /* centra horizontal */
@@ -51,3 +54,29 @@
 
 .page-home #last-ads .section-top-actions { margin: 8px 0 12px; }
 .page-home #last-ads .section-footer     { margin-top: 12px; }
+
+/* ===== Listado (list view) ===== */
+/* Paginador: estilo neutral (no azul primario) — propio de la vista */
+.paginator button {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ccc;
+}
+.paginator button:hover { background: #eaeaea; }
+.paginator button:focus-visible {
+  outline: 2px solid #0056b3;  /* consistente con el global */
+  outline-offset: 2px;
+}
+
+/* Fix: permitir que el contenedor scroll se encoja dentro del grid */
+.adoptions-list > .adoptions-scroll {
+  min-width: 0;      /* clave: permite shrink en grid */
+  width: 100%;
+  max-width: 100%;
+}
+/* Asegura que los hijos no bloqueen el shrink del contenedor */
+.adoptions-scroll > .adoption-head,
+.adoptions-scroll > .adoption-row,
+.adoptions-scroll > .adoption-details {
+  min-width: 0;
+}

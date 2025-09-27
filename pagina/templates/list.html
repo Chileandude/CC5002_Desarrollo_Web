@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Avisos de Adopción</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
@@ -40,13 +40,16 @@
         <figcaption id="lightbox-caption" class="photo-lightbox__caption"></figcaption>
     </figure>
 </div>
+
+<!-- Dependencias -->
 <script src="{{ url_for('pages.routes_js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
-<!-- Dependencias -->
+
 <!-- Componentes -->
 <script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/AdoptionList.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pages/ListView.js') }}"></script>
+
 <script>
     // Sidebar
     const menu = new MenuSidebar({openWidth: 140, closedWidth: 56, brandHtml: "🐾"});

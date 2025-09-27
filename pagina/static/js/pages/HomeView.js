@@ -1,27 +1,27 @@
 (function () {
+
+    /**
+     * Vista de portada: carga últimos avisos y los pinta como cards.
+     * - Sin dependencias del modelo antiguo; usa los datos tal cual vienen de la API.
+     */
     class HomeView {
         constructor() {
-            /** @type {HTMLElement|null} */
             this.grid = document.getElementById("last-ads-grid");
-            /** @type {AdoptionAd[]|any[]} */
             this.ads = [];
         }
 
+        /** @returns {Promise<void>} */
         async #load() {
             this.ads = [];
             try {
-                const { data } = await window.API.getLatestAds(5);
-                const hasModel = typeof window.AdoptionAd?.fromJSON === "function";
-                const mapped = Array.isArray(data) ? data : [];
-
-                this.ads = mapped.map(x => (hasModel ? window.AdoptionAd.fromJSON(x) : x));
-
+                const {data} = await window.API.getLatestAds(5);
+                const list = Array.isArray(data) ? (data) : [];
                 const toTs = (v) => {
-                    const s = v?.creado_en ?? v?.fecha_ingreso ?? v?.fecha_disponible ?? null;
+                    const s = v?.creado_en ?? v?.fecha_disponible ?? null;
                     const t = s ? Date.parse(String(s).replace(" ", "T")) : NaN;
                     return Number.isNaN(t) ? -Infinity : t;
                 };
-                this.ads.sort((a, b) => toTs(b) - toTs(a));
+                this.ads = list.slice().sort((a, b) => toTs(b) - toTs(a));
             } catch (e) {
                 console.error(e);
                 this.ads = [];
@@ -55,7 +55,9 @@
                     .finally(() => this.grid.classList.remove("loading"));
             };
             void run();
-            this._onAdCreated = () => { void run(); };
+            this._onAdCreated = () => {
+                void run();
+            };
             window.addEventListener("ad-created", this._onAdCreated);
         }
     }

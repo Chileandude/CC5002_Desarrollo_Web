@@ -5,12 +5,13 @@
   margin-left: 56px;
 }
 
+/* Variables de tema */
 :root {
   --link: #f1f1f1;
   --link-hover: #575757;
 }
 
-/* Contenedor del menú lateral */
+/* ===== Sidenav ===== */
 .sidenav {
   height: 100%;
   width: 56px;
@@ -47,15 +48,15 @@
   background: var(--link-hover);
 }
 
-/* Logo/brand que queda visible cuando está cerrada */
+/* Logo/brand visible al estar cerrada */
 .sidenav__brand {
-  font-size: 20px;            /* sustituye por <img> */
+  font-size: 20px; /* sustituible por <img> */
   display: inline-block;
   width: 24px;
   text-align: center;
 }
 
-/* Indicador de apertura/cierre */
+/* Indicador apertura/cierre */
 .sidenav__chevron {
   font-weight: bold;
 }
@@ -67,7 +68,7 @@
   padding: 8px 0;
 }
 
-/* Estética de los links */
+/* Estética de links */
 .sidenav__links a {
   padding: 10px 20px;
   text-decoration: none;
@@ -77,32 +78,30 @@
   transition: background-color 0.2s ease;
 }
 
-/* Hover en links */
 .sidenav__links a:hover {
   background: var(--link-hover);
 }
 
-/* Visibilidad de links según estado */
+/* Visibilidad de links por estado */
 .sidenav--closed .sidenav__links a {
   visibility: hidden;
   pointer-events: none;
 }
-
 .sidenav--open .sidenav__links a {
   visibility: visible;
   pointer-events: auto;
 }
 
+/* Backdrop para móviles */
 .sidenav-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,.4);
   opacity: 0;
   pointer-events: none;
-  z-index: 900; 
+  z-index: 900;
   transition: opacity .2s ease;
 }
-
 .sidenav-backdrop.is-visible {
   opacity: 1;
   pointer-events: auto;

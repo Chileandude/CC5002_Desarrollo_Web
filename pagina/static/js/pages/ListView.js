@@ -1,15 +1,28 @@
 (function () {
+
+    /**
+     * Lee el número de página desde la URL (?page=).
+     * @returns {number} Página actual (>= 1).
+     */
     function getPageFromURL() {
         const p = parseInt(new URLSearchParams(location.search).get("page") || "1", 10);
         return Number.isFinite(p) && p > 0 ? p : 1;
     }
 
+    /**
+     * Actualiza ?page= en la URL.
+     * @param {number} newPage
+     * @returns {void}
+     */
     function setPageInURL(newPage) {
         const url = new URL(location.href);
         url.searchParams.set("page", String(newPage));
         history.pushState({}, "", url);
     }
 
+    /**
+     * Vista de listado: pagina, pide datos y renderiza AdoptionList.
+     */
     class ListView {
         constructor() {
             this.listMount = document.getElementById("adoptions-list");
@@ -41,11 +54,21 @@
             this.pg.last.addEventListener("click", () => this.goTo(this.totalPages));
         }
 
-        async fetchPage(page, signal) {
+        /**
+         * Pide una página al backend.
+         * @param {number} page
+         * @param {AbortSignal} signal
+         * @returns {Promise<>}
+         */        async fetchPage(page, signal) {
             const {data, page: p, size, total_pages, total_items} = await window.API.getAdsPage(page, 5);
             return {data, page: p, size, total_pages, total_items};
         }
 
+
+        /**
+         * Actualiza el estado visual del paginador (botones y contador).
+         * @returns {void}
+         */
         updatePaginatorUI() {
             this.pg.info.textContent = ` ${this.current} de ${this.totalPages} `;
             const atFirst = this.current <= 1;
@@ -58,15 +81,26 @@
 
             this.pg.root.style.visibility = this.totalPages > 1 ? "visible" : "hidden";
         }
+
+        /**
+         * Marca el paginador como ocupado/libre.
+         * @param {boolean} busy
+         * @returns {void}
+         */
         _setPaginatorBusy(busy) {
             // Evita doble clic y estados inconsistentes durante carga
             this.pg.first.disabled = busy || this.pg.first.disabled;
-            this.pg.prev.disabled  = busy || this.pg.prev.disabled;
-            this.pg.next.disabled  = busy || this.pg.next.disabled;
-            this.pg.last.disabled  = busy || this.pg.last.disabled;
+            this.pg.prev.disabled = busy || this.pg.prev.disabled;
+            this.pg.next.disabled = busy || this.pg.next.disabled;
+            this.pg.last.disabled = busy || this.pg.last.disabled;
             if (this.pg.root) this.pg.root.classList.toggle("is-loading", !!busy);
         }
 
+        /**
+         * Carga una página y renderiza la lista.
+         * @param {number} page
+         * @returns {Promise<void>}
+         */
         async load(page) {
             if (this._abortCtl) this._abortCtl.abort();
             this._abortCtl = new AbortController();
@@ -104,12 +138,21 @@
             }
         }
 
+        /**
+         * Navega a una página válida y dispara la carga.
+         * @param {number} dest
+         * @returns {void}
+         */
         goTo(dest) {
             if (dest < 1 || dest > this.totalPages) return;
             setPageInURL(dest);
             void this.load(dest);
         }
 
+        /**
+         * Punto de entrada: carga inicial y wiring del popstate.
+         * @returns {void}
+         */
         init() {
             void this.load(getPageFromURL());
             window.addEventListener("popstate", () => this.load(getPageFromURL()));

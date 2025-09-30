@@ -58,6 +58,12 @@ FLUSH PRIVILEGES;"
 ### 2) Cargar los scripts SQL
 Ahora para poblar la base de datos:
 ```
+# Linux
+mysql -u cc5002 -pprogramacionweb tarea2 < bdd/tarea2.sql
+mysql -u cc5002 -pprogramacionweb tarea2 < bdd/region-comuna.sql
+mysql -u cc5002 -pprogramacionweb tarea2 < bdd/cargar_dummy.sql
+
+# Windows
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\tarea2.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\region-comuna.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\cargar_dummy.sql

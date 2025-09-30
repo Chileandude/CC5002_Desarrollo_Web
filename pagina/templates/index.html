@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portada</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+</head>
+<body class="page-home">
+<div id="menu-container"></div>
+
+<div id="main">
+    <div class="main__inner">
+        <h1>Bienvenido</h1>
+        <p>Hello World! Esta es mi página creada para la tarea 1 del curso CC5002.
+            En ella podrás publicar tus anuncios para adopción de mascotas como también revisar los de los demás.
+            Por favor usa el menú lateral para navegar</p>
+        <section id="last-ads" aria-labelledby="last-ads-title">
+            <h2 id="last-ads-title">Últimos avisos</h2>
+
+            <div class="section-top-actions">
+                <button type="button" id="open-add">Agregar aviso de adopción</button>
+            </div>
+
+            <div id="last-ads-grid" class="home-grid"></div>
+
+            <div class="section-footer">
+                <button type="button" id="open-add-bottom">+ Agregar aviso de adopción</button>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Dependencias -->
+<script src="{{ url_for('pages.routes_js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/validators.js') }}"></script>
+
+<!-- Componentes -->
+<script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/AddModal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/Card.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/HomeView.js') }}"></script>
+
+<script>
+    // Sidebar
+    const menu = new MenuSidebar({openWidth: 140, closedWidth: 56, brandHtml: "🐾"});
+    document.getElementById("menu-container").appendChild(menu.render());
+
+    // Modal
+    const modal = new AddModal({
+        onCancel: (reason) => {
+            console.log("Modal cerrado por:", reason);
+        }
+    });
+
+    (function addOpenHandlers(ids) {
+        ids.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener("click", () => modal.open());
+        });
+    })(["open-add", "open-add-bottom"]);
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Estadísticas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+</head>
+<body>
+<div id="menu-container"></div>
+<div id="main"></div>
+<script src="{{ url_for('pages.routes_js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/StatisticsCharts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/StatsView.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>
+<script>
+    // Sidebar
+    const menu = new MenuSidebar({openWidth: 140, closedWidth: 56, brandHtml: "🐾"});
+    document.getElementById("menu-container").appendChild(menu.render());
+</script>
+</body>
+</html>

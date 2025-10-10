@@ -12,7 +12,20 @@
 <body>
 <div id="menu-container"></div>
 <div id="main"></div>
+
+<!-- Dependencias -->
 <script src="{{ url_for('pages.routes_js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    if (window.Chart) {
+        Chart.defaults.color = "#000";
+        Chart.defaults.borderColor = "rgba(0,0,0,0.12)";
+    }
+</script>
+
+<!-- Componentes -->
 <script src="{{ url_for('static', filename='js/components/StatisticsCharts.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pages/StatsView.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>

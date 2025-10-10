@@ -1,5 +1,5 @@
-from typing import Any, Dict, List, Tuple, Optional
-from datetime import datetime
+from typing import Any, Dict, List, Tuple
+from datetime import datetime, timedelta, date
 
 from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy import select, func
@@ -323,3 +323,111 @@ def crear_aviso():
             "descripcion": aviso.descripcion,
             "fotos": fotos_urls,
         }), 201
+
+
+@api_bp.get("/stats/daily")
+def stats_daily():
+    """
+    Cantidad de avisos agregados por día en un rango.
+      - Query: from=YYYY-MM-DD (opcional, default hoy-30), to=YYYY-MM-DD (opcional, default hoy)
+    ->
+      - JSON: {"labels": [YYYY-MM-DD, ...], "datasets": [{"label": "Avisos por día", "data": [int, ...]}]}
+    """
+    try:
+        to_s = request.args.get("to")
+        from_s = request.args.get("from")
+        today = date.today()
+        to_d = datetime.strptime(to_s, "%Y-%m-%d").date() if to_s else today
+        from_d = datetime.strptime(from_s, "%Y-%m-%d").date() if from_s else (to_d - timedelta(days=30))
+        if from_d > to_d:
+            from_d, to_d = to_d, from_d
+    except ValueError:
+        return jsonify({"error": "Formato de fecha inválido"}), 400
+
+    with get_session() as s:
+        rows = s.execute(
+            select(func.date(AvisoAdopcion.fecha_ingreso).label("dia"),
+                   func.count(AvisoAdopcion.id))
+            .where(AvisoAdopcion.fecha_ingreso >= datetime.combine(from_d, datetime.min.time()),
+                   AvisoAdopcion.fecha_ingreso <= datetime.combine(to_d, datetime.max.time()))
+            .group_by("dia")
+            .order_by("dia")
+        ).all()
+    counts = {r[0].strftime("%Y-%m-%d"): int(r[1]) for r in rows}
+    labels, data = [], []
+    cur = from_d
+    while cur <= to_d:
+        key = cur.strftime("%Y-%m-%d")
+        labels.append(key)
+        data.append(counts.get(key, 0))
+        cur += timedelta(days=1)
+
+    return jsonify({
+        "labels": labels,
+        "datasets": [{"label": "Avisos por día", "data": data}]
+    })
+
+
+@api_bp.get("/stats/by-type")
+def stats_by_type():
+    """
+    Totales de avisos por tipo de mascota.
+      - None
+    ->
+      - JSON: {"labels": ["gato","perro"], "datasets": [{"label": "Total por tipo", "data": [gatos, perros]}]}
+    """
+    with get_session() as s:
+        rows = s.execute(
+            select(AvisoAdopcion.tipo, func.count(AvisoAdopcion.id))
+            .group_by(AvisoAdopcion.tipo)
+        ).all()
+    totals = {t: int(c) for (t, c) in rows}
+    labels = ["Gato", "Perro"]
+    data = [totals.get("gato", 0), totals.get("perro", 0)]
+    colors = ["#2196F3", "#FF9800"]
+    return jsonify({
+        "labels": labels,
+        "datasets": [{"label": "Total por tipo", "data": data, "backgroundColor": colors,}]
+    })
+
+
+@api_bp.get("/stats/monthly")
+def stats_monthly():
+    """
+    Cantidad de avisos por mes (dos barras por mes: gatos y perros) para un año.
+      - Query: year=YYYY (opcional, default año actual)
+    ->
+      - JSON: {"labels": ["YYYY-01",...,"YYYY-12"], "datasets": [{"label": "Gatos",  "data": [..12..]},
+                                                                 {"label": "Perros", "data": [..12..]}]}
+    """
+    try:
+        year = int(request.args.get("year")) if request.args.get("year") else datetime.now().year
+    except ValueError:
+        return jsonify({"error": "Parámetro 'year' inválido"}), 400
+
+    with get_session() as s:
+        rows = s.execute(
+            select(func.month(AvisoAdopcion.fecha_ingreso).label("mes"),
+                   AvisoAdopcion.tipo,
+                   func.count(AvisoAdopcion.id))
+            .where(func.year(AvisoAdopcion.fecha_ingreso) == year)
+            .group_by("mes", AvisoAdopcion.tipo)
+            .order_by("mes")
+        ).all()
+    gatos = [0] * 12
+    perros = [0] * 12
+    for mes, tipo, cnt in rows:
+        if 1 <= mes <= 12:
+            if tipo == "gato":
+                gatos[mes - 1] = int(cnt)
+            elif tipo == "perro":
+                perros[mes - 1] = int(cnt)
+
+    labels = [f"{year}-{m:02d}" for m in range(1, 13)]
+    return jsonify({
+        "labels": labels,
+        "datasets": [
+            {"label": "Gatos", "data": gatos, "backgroundColor": "#2196F3"},
+            {"label": "Perros", "data": perros, "backgroundColor": "#FF9800"}
+        ]
+    })

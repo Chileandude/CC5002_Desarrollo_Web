@@ -13,7 +13,7 @@
      * @returns {Promise<T>}
      */
     async function fetchJSON(url) {
-        const res = await fetch(url, { headers: { "Accept": "application/json" } });
+        const res = await fetch(url, {headers: {"Accept": "application/json"}});
         if (!res.ok) throw new Error(`Error ${res.status} al pedir ${url}`);
         return res.json();
     }
@@ -53,5 +53,45 @@
         return fetchJSON(u.toString());
     }
 
-    window.API = { fetchJSON, getLatestAds, getAdsPage, getAdById };
+    /**
+     * Estadística: avisos por día en un rango.
+     * @param {{ from?: string, to?: string }} [opts]
+     * @returns {Promise<{ labels: string[], datasets: Array<{ label: string, data: number[] }> }>}
+     */
+    async function getStatsDaily(opts = {}) {
+        const u = new URL(`${API_BASE}/stats/daily`, window.location.origin);
+        if (opts.from) u.searchParams.set("from", opts.from);
+        if (opts.to) u.searchParams.set("to", opts.to);
+        return fetchJSON(u.toString());
+    }
+
+    /**
+     * Estadística: totales por tipo.
+     * @returns {Promise<{ labels: string[], datasets: Array<{ label: string, data: number[] }> }>}
+     */
+    async function getStatsByType() {
+        const u = new URL(`${API_BASE}/stats/by-type`, window.location.origin);
+        return fetchJSON(u.toString());
+    }
+
+    /**
+     * Estadística: barras por mes para un año.
+     * @param {number} [year] - Año (YYYY). Si no se indica, lo define el backend.
+     * @returns {Promise<{ labels: string[], datasets: Array<{ label: string, data: number[] }> }>}
+     */
+    async function getStatsMonthly(year) {
+        const u = new URL(`${API_BASE}/stats/monthly`, window.location.origin);
+        if (year) u.searchParams.set("year", String(year));
+        return fetchJSON(u.toString());
+    }
+
+    window.API = {
+        fetchJSON,
+        getLatestAds,
+        getAdsPage,
+        getAdById,
+        getStatsDaily,
+        getStatsByType,
+        getStatsMonthly,
+    };
 })();

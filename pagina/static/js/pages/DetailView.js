@@ -1,4 +1,3 @@
-// static/js/pages/DetailView.js
 (function () {
     "use strict";
 

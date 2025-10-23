@@ -3,26 +3,47 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Avisos de Adopción</title>
+    <title>Detalle del aviso</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
 </head>
-<body>
+
+<body class="page-detail">
 <div id="menu-container"></div>
 
-<main id="main">
-    <h1>Listado de Avisos de Adopción</h1>
-    <div id="adoptions-list" class="adoptions-list"></div>
-    <nav id="paginator" class="paginator" aria-label="Paginación">
-        <button id="pg-first" type="button">Primero</button>
-        <button id="pg-prev"  type="button" aria-label="Anterior">‹</button>
-        <span id="pg-info" aria-live="polite">1 de 1</span>
-        <button id="pg-next"  type="button" aria-label="Siguiente">›</button>
-        <button id="pg-last"  type="button">Último</button>
-    </nav>
-</main>
+<div id="main">
+    <div class="main__inner">
+        <h1>Detalle del aviso</h1>
+
+        <!-- Contenedor donde se inyectará la Card con la información -->
+        <section id="detail-view" aria-labelledby="detail-view-title">
+            <h2 id="detail-view-title" class="sr-only">Información del aviso</h2>
+        </section>
+
+        <!-- Sección de comentarios -->
+        <section id="comments-section" aria-labelledby="comments-title" style="margin-top: 2rem;">
+            <h2 id="comments-title">Comentarios</h2>
+            <div id="comments-list"></div>
+
+            <form id="comment-form" class="comment-form">
+                <div>
+                    <label for="comment-name">Nombre</label>
+                    <input id="comment-name" name="nombre" type="text" minlength="3" maxlength="80" required>
+                </div>
+
+                <div>
+                    <label for="comment-text">Comentario</label>
+                    <textarea id="comment-text" name="texto" rows="4" cols="50" minlength="5" maxlength="300" required></textarea>
+                </div>
+
+                <button type="submit">Agregar comentario</button>
+            </form>
+        </section>
+    </div>
+</div>
 
 <!-- Lightbox global para fotos -->
 <div id="photo-lightbox" class="photo-lightbox" aria-hidden="true">
@@ -44,15 +65,18 @@
 <!-- Dependencias -->
 <script src="{{ url_for('pages.routes_js') }}"></script>
 <script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/validators.js') }}"></script>
 
 <!-- Componentes -->
 <script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/Card.js') }}"></script>
 <script src="{{ url_for('static', filename='js/components/PhotoLightbox.js') }}"></script>
-<script src="{{ url_for('static', filename='js/components/AdoptionList.js') }}"></script>
-<script src="{{ url_for('static', filename='js/pages/ListView.js') }}"></script>
+
+<!-- Página -->
+<script src="{{ url_for('static', filename='js/pages/DetailView.js') }}"></script>
 
 <script>
-    // Sidebar
+    // Sidebar igual que en las demás páginas
     const menu = new MenuSidebar({openWidth: 140, closedWidth: 56, brandHtml: "🐾"});
     document.getElementById("menu-container").appendChild(menu.render());
 </script>

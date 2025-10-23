@@ -1,6 +1,7 @@
 (function () {
     /**
      * @typedef {Object} Adoption
+     * @typedef {Object} AdoptionListOptions
      * @property {number} id
      * @property {string} [region]
      * @property {string} [comuna]
@@ -28,7 +29,10 @@
             const hora = d.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit", hour12: false});
             return `${fecha} ${hora}`;
         },
-        /** @param {number|undefined} e @param {string|undefined} u */
+        /**
+         * @param {number|undefined} e
+         * @param {string|undefined} u
+         */
         edad(e, u) {
             if (e == null || !u) return "—";
             return `${e} ${u}`;
@@ -54,50 +58,16 @@
         },
     };
 
-    class PhotoLightbox {
-        constructor(root) {
-            if (!root) {
-                this.disabled = true;
-                return;
-            }
-            this.root = root;
-            this.img = root.querySelector("#lightbox-img");
-            this.caption = root.querySelector("#lightbox-caption");
-
-            root.addEventListener("click", (ev) => {
-                const t = ev.target;
-                if (t.matches("[data-close]") || t.classList.contains("photo-lightbox__backdrop")) {
-                    this.close();
-                }
-            });
-            document.addEventListener("keydown", (e) => {
-                if (this.root.getAttribute("aria-hidden") === "false" && e.key === "Escape") this.close();
-            });
-        }
-
-        open(src, caption = "") {
-            if (this.disabled || !this.root || !this.img || !this.caption) return;
-            this.img.src = src;
-            this.caption.textContent = caption;
-            this.root.setAttribute("aria-hidden", "false");
-        }
-
-        close() {
-            if (this.disabled || !this.root || !this.img || !this.caption) return;
-            this.img.src = "";
-            this.caption.textContent = "";
-            this.root.setAttribute("aria-hidden", "true");
-        }
-    }
-
     class AdoptionList {
         /**
          * @param {HTMLElement} mountEl
          * @param {Adoption[]} data
+         * @param {AdoptionListOptions} options
          */
-        constructor(mountEl, data) {
+        constructor(mountEl, data, options ={}) {
             this.mountEl = mountEl;
             this.data = data;
+            this.options = options
             /** @type {Map<number, HTMLElement>} mapa id -> contenedor de detalle */
             this.detailsMap = new Map();
             /** @type {PhotoLightbox} */
@@ -170,15 +140,28 @@
                 row.appendChild(c);
             }
 
-            const toggle = () => this.#toggleDetails(row, item);
-            row.addEventListener("click", toggle);
-            row.addEventListener("keydown", (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggle();
-                }
-            });
-
+            if (this.options.redirectOnClick) {
+                const goToDetail = () => {
+                    window.location.href = this.#detailUrl(item.id);
+                };
+                row.setAttribute("role", "link");
+                row.addEventListener("click", goToDetail);
+                row.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.preventDefault();
+                    }
+                });
+            } else {
+                const toggle = () => this.#toggleDetails(row, item);
+                row.addEventListener("click", toggle);
+                row.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggle();
+                    }
+                });
+            }
             return row;
         }
 
@@ -200,6 +183,13 @@
             row.insertAdjacentElement("afterend", detailsEl);
             this.detailsMap.set(item.id, detailsEl);
         }
+
+        #detailUrl(id){
+            const base = (window.ROUTES && window.ROUTES.list) ? window.ROUTES.list : "/list";
+            const normalized = String(base).replace(/\/+$/, "");
+            return `${normalized}/${id}`;
+        }
+
 
         /**
          * @param {HTMLElement} row

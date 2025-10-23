@@ -80,3 +80,14 @@
 .adoptions-scroll > .adoption-details {
   min-width: 0;
 }
+
+/* ===== Detalle (page-detail) ===== */
+.page-detail #main .main__inner {
+  width: clamp(280px, 84vw, 1120px);
+  margin: 0 auto;
+}
+
+/* Ritmo vertical coherente */
+.page-detail #main .main__inner > * + * {
+  margin-top: 12px;
+}

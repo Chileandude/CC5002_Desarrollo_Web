@@ -13,6 +13,11 @@ def list_view():
     return render_template("list.html")
 
 
+@pages_bp.route("/list/<int:aviso_id>", methods=["GET"])
+def list_detail(aviso_id):
+    return render_template("detail.html", aviso_id=aviso_id)
+
+
 @pages_bp.route("/stats", methods=["GET"])
 def stats_view():
     return render_template("stats.html")

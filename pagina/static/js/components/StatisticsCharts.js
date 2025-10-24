@@ -64,7 +64,7 @@
                 return;
             }
 
-            const root = document.createElement("section");
+            const root = document.createElement("div");
             root.className = "stats-charts";
             this.root = root;
 

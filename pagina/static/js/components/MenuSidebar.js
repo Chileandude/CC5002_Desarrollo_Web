@@ -48,7 +48,6 @@ class MenuSidebar {
         this.container = document.createElement("aside");
         this.container.className = "sidenav sidenav--closed";
         this.container.id = this.container.id || "sidenav";
-        this.container.setAttribute("role", "complementary");
         this.container.style.width = `${this.closedWidth}px`;
         this.container.setAttribute("aria-hidden", "true");
 

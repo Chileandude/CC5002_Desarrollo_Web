@@ -85,6 +85,43 @@
         return fetchJSON(u.toString());
     }
 
+    /**
+     * Obtiene los comentarios de un aviso (paginados).
+     * @param {number|string} avisoId - ID del aviso.
+     * @param {{ page?: number, limit?: number, order?: "asc"|"desc" }} [opts]
+     * @returns {Promise<{ data: Array<{id:number, nombre:string, texto:string, fecha:string}>, total: number, page: number, limit: number }>}
+     */
+    async function getComments(avisoId, opts = {}) {
+        const u = new URL(`${API_BASE}/avisos/${avisoId}/comentarios`, window.location.origin);
+        if (opts.page) u.searchParams.set("page", String(opts.page));
+        if (opts.limit) u.searchParams.set("limit", String(opts.limit));
+        if (opts.order) u.searchParams.set("order", opts.order);
+        return fetchJSON(u.toString());
+    }
+
+    /**
+     * Envía un nuevo comentario a un aviso.
+     * @param {number|string} avisoId - ID del aviso.
+     * @param {{ nombre: string, texto: string }} payload
+     * @returns {Promise<{ id:number, aviso_id:number, nombre:string, texto:string, fecha:string }>}
+     */
+    async function postComment(avisoId, payload) {
+        const res = await fetch(`${API_BASE}/avisos/${avisoId}/comentarios`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Error ${res.status} al enviar comentario`);
+        }
+        return res.json();
+    }
+
+
     window.API = {
         fetchJSON,
         getLatestAds,
@@ -93,5 +130,7 @@
         getStatsDaily,
         getStatsByType,
         getStatsMonthly,
+        getComments,
+        postComment,
     };
 })();

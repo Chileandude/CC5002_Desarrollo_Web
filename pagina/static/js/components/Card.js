@@ -76,6 +76,7 @@
 
                 return `
 				<article class="card card--home-row" data-id="${ad.id}">
+				    <h2 class="sr-only">Aviso ${ad.id}</h2>
 					<div class="card--home-row__meta">
 						<div><b>Fecha publicación:</b> ${publicado}</div>
 						<div><b>Comuna:</b> ${comuna}</div>
@@ -149,6 +150,7 @@
                     </div>`;
                 return `
                     <article class="card card--detail" data-id="${ad.id}">
+                        <h2 class="sr-only">Detalle del aviso ${ad.id}</h2>
                         <div class="card--detail__head">
                             <div class="card--home-row__meta">
                                 <div><b>Fecha publicación:</b> ${publicado}</div>
@@ -184,22 +186,26 @@
                 const e = Card.#esc;
                 const s = Card.#safetyCheck;
                 const nombre = cmt?.nombre ? e(cmt.nombre) : "—";
-                const fecha = Card.#fmt(cmt?.fecha || cmt?.fecha_iso);
-                const texto =
-                    cmt?.texto && String(cmt.texto).trim() ? s(String(cmt.texto)) : "—";
+
+                const raw = String(cmt?.fecha || cmt?.fecha_iso || "").trim();
+                const iso = raw ? raw.replace(" ", "T") : ""; // "YYYY-MM-DDTHH:MM"
+                const visible = Card.#fmt(raw || null);                          // "dd-mm-aaaa hh:mm"
+
+                const texto =  cmt?.texto && String(cmt.texto).trim() ? s(String(cmt.texto)) : "—";
 
                 return `
-            <article class="card card--comment" data-id="${cmt?.id ?? ""}">
-                <div class="card--home-row__meta">
-                    <div><b>Nombre:</b> ${nombre}</div>
-                    <div><b>Fecha:</b> 
-                        <time class="card--comment__date"> ${fecha} </time>
-                    </div>
-                </div>
-                <div class="card--comment__body">
-                    <p>${texto}</p>
-                </div>
-            </article>`;
+                    <article class="card card--comment" data-id="${cmt?.id ?? ""}">
+                        <h3 class="sr-only">Comentario de ${nombre}</h3>
+                        <div class="card--home-row__meta">
+                            <div><b>Nombre:</b> ${nombre}</div>
+                            <div><b>Fecha:</b> 
+                                 <time class="card--comment__date" ${iso ? `datetime="${e(iso)}"` : ""}>${visible}</time>
+                            </div>
+                        </div>
+                        <div class="card--comment__body">
+                            <p>${texto}</p>
+                        </div>
+                    </article>`;
             }
 
             static render(data, variant = "home") {

@@ -89,7 +89,6 @@
 }
 .sidenav--open .sidenav__links a {
   visibility: visible;
-  pointer-events: auto;
 }
 
 /* Backdrop para móviles */
@@ -98,11 +97,12 @@
   inset: 0;
   background: rgba(0,0,0,.4);
   opacity: 0;
-  pointer-events: none;
   z-index: 900;
   transition: opacity .2s ease;
 }
 .sidenav-backdrop.is-visible {
   opacity: 1;
-  pointer-events: auto;
+}
+.sidenav-backdrop:not(.is-visible) {
+  pointer-events: none;
 }

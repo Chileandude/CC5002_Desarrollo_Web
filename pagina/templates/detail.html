@@ -21,27 +21,9 @@
         <!-- Contenedor donde se inyectará la Card con la información -->
         <section id="detail-view" aria-labelledby="detail-view-title">
             <h2 id="detail-view-title" class="sr-only">Información del aviso</h2>
+            <div id="detail-card"></div>
         </section>
 
-        <!-- Sección de comentarios -->
-        <section id="comments-section" aria-labelledby="comments-title" style="margin-top: 2rem;">
-            <h2 id="comments-title">Comentarios</h2>
-            <div id="comments-list"></div>
-
-            <form id="comment-form" class="comment-form">
-                <div>
-                    <label for="comment-name">Nombre</label>
-                    <input id="comment-name" name="nombre" type="text" minlength="3" maxlength="80" required>
-                </div>
-
-                <div>
-                    <label for="comment-text">Comentario</label>
-                    <textarea id="comment-text" name="texto" rows="4" cols="50" minlength="5" maxlength="300" required></textarea>
-                </div>
-
-                <button type="submit">Agregar comentario</button>
-            </form>
-        </section>
     </div>
 </div>
 

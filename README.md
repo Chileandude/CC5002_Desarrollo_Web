@@ -62,12 +62,30 @@ Ahora para poblar la base de datos:
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd/tarea2.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd/region-comuna.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd/cargar_dummy.sql
+mysql -u cc5002 -pprogramacionweb tarea2 < bdd/tabla-comentario.sql
 
 # Windows
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\tarea2.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\region-comuna.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\cargar_dummy.sql
+mysql -u cc5002 -pprogramacionweb tarea2 < bdd\tabla-comentario.sql 
 ```
 El primer script es obligatorio, ya que crea las tablas vacías necesarias para que la aplicación funcione.
 El segundo script carga en las tablas región y comuna los datos de referencia.
 Finalmente, el tercer script inserta avisos de adopción de prueba en la base de datos.
+
+---
+## Gráficos y visualización de datos
+
+En la vista Estadísticas, los gráficos se generan con la librería Chart.js de código abierto para visualización
+interactiva en canvas.
+
+Se usa para mostrar:
+
+- La cantidad de avisos por día (línea temporal).
+
+- El total por tipo de mascota (gráfico de torta).
+
+- El total por mes y tipo (barras agrupadas).
+
+Chart.js se integra mediante el componente StatisticsCharts.js, siguiendo la misma arquitectura OOP que el resto del proyecto.

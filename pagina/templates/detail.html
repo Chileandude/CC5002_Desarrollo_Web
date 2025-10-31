@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del aviso</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+</head>
+
+<body class="page-detail">
+<div id="menu-container"></div>
+
+<div id="main">
+    <div class="main__inner">
+        <h1>Detalle del aviso</h1>
+
+        <!-- Contenedor donde se inyectará la Card con la información -->
+        <section id="detail-view" aria-labelledby="detail-view-title">
+            <h2 id="detail-view-title" class="sr-only">Información del aviso</h2>
+            <div id="detail-card"></div>
+        </section>
+
+    </div>
+</div>
+
+<!-- Lightbox global para fotos -->
+<div id="photo-lightbox" class="photo-lightbox" aria-hidden="true">
+    <div class="photo-lightbox__backdrop" data-close></div>
+    <figure
+            class="photo-lightbox__figure"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Vista ampliada de foto"
+    >
+        <!--es un gif 1x1 transparente soluciona el validador usado en el curso -->
+        <img id="lightbox-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+             alt="Foto ampliada" width="800" height="600">
+        <button class="photo-lightbox__close" type="button" data-close>Cerrar</button>
+        <figcaption id="lightbox-caption" class="photo-lightbox__caption"></figcaption>
+    </figure>
+</div>
+
+<!-- Dependencias -->
+<script src="{{ url_for('pages.routes_js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/validators.js') }}"></script>
+
+<!-- Componentes -->
+<script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/Card.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/PhotoLightbox.js') }}"></script>
+
+<!-- Página -->
+<script src="{{ url_for('static', filename='js/pages/DetailView.js') }}"></script>
+
+<script>
+    // Sidebar igual que en las demás páginas
+    const menu = new MenuSidebar({openWidth: 140, closedWidth: 56, brandHtml: "🐾"});
+    document.getElementById("menu-container").appendChild(menu.render());
+</script>
+</body>
+</html>

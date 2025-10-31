@@ -6,6 +6,7 @@
         constructor(opts = {}) {
             this.mount = opts.mount ?? document.getElementById("main");
             if (!this.mount) throw new Error("StatsView: no se encontró #main");
+            this.charts = null;
         }
 
         render() {
@@ -26,7 +27,8 @@
 
             this.mount.appendChild(page);
 
-            // Instancia del componente
+            const currentYear = new Date().getFullYear();
+
             const charts = new window.StatisticsCharts({
                 mount: chartsMount,
                 initialId: "line",
@@ -35,28 +37,84 @@
                     {
                         id: "line",
                         label: "Línea (por día)",
-                        src: "static/assets/img/Picture1.png",
-                        alt:
-                            "Gráfico de líneas: avisos de adopción por día. Eje X: días; Eje Y: cantidad.",
+                        type: "line",
+                        fetcher: () => window.API.getStatsDaily(), // backend: últimos 30 días por defecto
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {display: false},
+                                tooltip: {mode: "index", intersect: false},
+                                title: {display: false}
+                            },
+                            scales: {
+                                x: {
+                                    ticks: {maxRotation: 0, autoSkip: true},
+                                    title: {display: true, text: "Día"}
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    title: {display: true, text: "Cantidad"},
+                                    ticks: {precision: 0}
+                                }
+                            },
+                            elements: {line: {tension: 0.25}}
+                        }
                     },
                     {
                         id: "pie",
                         label: "Torta (por tipo)",
-                        src: "static/assets/img/Picture2.png",
-                        alt:
-                            "Gráfico de torta: total de avisos por tipo de mascota (gato y perro).",
+                        type: "pie",
+                        fetcher: () => window.API.getStatsByType(),
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {position: "bottom"},
+                                title: {display: false}
+                            }
+                        }
                     },
                     {
                         id: "bars",
                         label: "Barras (por mes)",
-                        src: "static/assets/img/Picture3.png",
-                        alt:
-                            "Gráfico de barras agrupadas por mes: una barra para gatos y otra para perros. Eje Y: cantidad.",
-                    },
-                ],
+                        type: "bar",
+                        fetcher: () => window.API.getStatsMonthly(currentYear),
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {position: "top"},
+                                title: {display: false}
+                            },
+                            scales: {
+                                x: {
+                                    stacked: false,
+                                    title: {display: true, text: "Mes"}
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    stacked: false,
+                                    title: {display: true, text: "Cantidad"},
+                                    ticks: {precision: 0}
+                                }
+                            }
+                        }
+                    }
+                ]
             });
 
             charts.render();
+            this.charts = charts;
+        }
+
+        /** Limpia la vista y destruye el componente de gráficos. */
+        destroy() {
+            if (this.charts && typeof this.charts.destroy === "function") {
+                this.charts.destroy();
+            }
+            this.charts = null;
+            if (this.mount) this.mount.innerHTML = "";
         }
     }
 
@@ -69,5 +127,6 @@
             console.error(e);
         }
     });
+
     window.StatsView = StatsView;
 })();

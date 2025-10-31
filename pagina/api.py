@@ -1,12 +1,12 @@
-from typing import Any, Dict, List, Tuple, Optional
-from datetime import datetime
+from typing import Any, Dict, List, Tuple
+from datetime import datetime, timedelta, date
 
 from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 
 from .db import get_session
-from .models import AvisoAdopcion, Comuna, Region, ContactarPor, Foto
+from .models import AvisoAdopcion, Comuna, Region, ContactarPor, Foto, Comentario
 from .upload import save_uploaded_file, unidad_label, validate_aviso
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -89,6 +89,25 @@ def _unidad_from_front(unidad_front: str | None) -> str:
     if u.startswith("a"):
         return "a"
     return "m"
+
+
+def _validate_comment_payload(data: Dict[str, Any]) -> Tuple[Dict[str, str], str, str]:
+    """
+    Valida el payload para crear comentario.
+      - data: {"nombre": str, "texto": str}
+    ->
+      - (errors, nombre_norm, texto_norm)
+    """
+    errors: Dict[str, str] = {}
+    nombre = (data.get("nombre") or "").strip()
+    texto = (data.get("texto") or "").strip()
+
+    if not (3 <= len(nombre) <= 80):
+        errors["nombre"] = "Debe tener entre 3 y 80 caracteres."
+    if not (5 <= len(texto) <= 300):
+        errors["texto"] = "Debe tener entre 5 y 300 caracteres."
+
+    return errors, nombre, texto
 
 
 @api_bp.get("/avisos")
@@ -322,4 +341,217 @@ def crear_aviso():
             "creado_en": aviso.fecha_ingreso.strftime("%Y-%m-%d %H:%M"),
             "descripcion": aviso.descripcion,
             "fotos": fotos_urls,
+        }), 201
+
+
+@api_bp.get("/stats/daily")
+def stats_daily():
+    """
+    Cantidad de avisos agregados por día en un rango.
+      - Query: from=YYYY-MM-DD (opcional, default hoy-30), to=YYYY-MM-DD (opcional, default hoy)
+    ->
+      - JSON: {"labels": [YYYY-MM-DD, ...], "datasets": [{"label": "Avisos por día", "data": [int, ...]}]}
+    """
+    try:
+        to_s = request.args.get("to")
+        from_s = request.args.get("from")
+        today = date.today()
+        to_d = datetime.strptime(to_s, "%Y-%m-%d").date() if to_s else today
+        from_d = datetime.strptime(from_s, "%Y-%m-%d").date() if from_s else (to_d - timedelta(days=30))
+        if from_d > to_d:
+            from_d, to_d = to_d, from_d
+    except ValueError:
+        return jsonify({"error": "Formato de fecha inválido"}), 400
+
+    with get_session() as s:
+        rows = s.execute(
+            select(func.date(AvisoAdopcion.fecha_ingreso).label("dia"),
+                   func.count(AvisoAdopcion.id))
+            .where(AvisoAdopcion.fecha_ingreso >= datetime.combine(from_d, datetime.min.time()),
+                   AvisoAdopcion.fecha_ingreso <= datetime.combine(to_d, datetime.max.time()))
+            .group_by("dia")
+            .order_by("dia")
+        ).all()
+    counts = {r[0].strftime("%Y-%m-%d"): int(r[1]) for r in rows}
+    labels, data = [], []
+    cur = from_d
+    while cur <= to_d:
+        key = cur.strftime("%Y-%m-%d")
+        labels.append(key)
+        data.append(counts.get(key, 0))
+        cur += timedelta(days=1)
+
+    return jsonify({
+        "labels": labels,
+        "datasets": [{"label": "Avisos por día", "data": data}]
+    })
+
+
+@api_bp.get("/stats/by-type")
+def stats_by_type():
+    """
+    Totales de avisos por tipo de mascota.
+      - None
+    ->
+      - JSON: {"labels": ["gato","perro"], "datasets": [{"label": "Total por tipo", "data": [gatos, perros]}]}
+    """
+    with get_session() as s:
+        rows = s.execute(
+            select(AvisoAdopcion.tipo, func.count(AvisoAdopcion.id))
+            .group_by(AvisoAdopcion.tipo)
+        ).all()
+    totals = {t: int(c) for (t, c) in rows}
+    labels = ["Gato", "Perro"]
+    data = [totals.get("gato", 0), totals.get("perro", 0)]
+    colors = ["#2196F3", "#FF9800"]
+    return jsonify({
+        "labels": labels,
+        "datasets": [{"label": "Total por tipo", "data": data, "backgroundColor": colors, }]
+    })
+
+
+@api_bp.get("/stats/monthly")
+def stats_monthly():
+    """
+    Cantidad de avisos por mes (dos barras por mes: gatos y perros) para un año.
+      - Query: year=YYYY (opcional, default año actual)
+    ->
+      - JSON: {"labels": ["YYYY-01",...,"YYYY-12"], "datasets": [{"label": "Gatos",  "data": [..12..]},
+                                                                 {"label": "Perros", "data": [..12..]}]}
+    """
+    try:
+        year = int(request.args.get("year")) if request.args.get("year") else datetime.now().year
+    except ValueError:
+        return jsonify({"error": "Parámetro 'year' inválido"}), 400
+
+    with get_session() as s:
+        rows = s.execute(
+            select(func.month(AvisoAdopcion.fecha_ingreso).label("mes"),
+                   AvisoAdopcion.tipo,
+                   func.count(AvisoAdopcion.id))
+            .where(func.year(AvisoAdopcion.fecha_ingreso) == year)
+            .group_by("mes", AvisoAdopcion.tipo)
+            .order_by("mes")
+        ).all()
+    gatos = [0] * 12
+    perros = [0] * 12
+    for mes, tipo, cnt in rows:
+        if 1 <= mes <= 12:
+            if tipo == "gato":
+                gatos[mes - 1] = int(cnt)
+            elif tipo == "perro":
+                perros[mes - 1] = int(cnt)
+
+    labels = [f"{year}-{m:02d}" for m in range(1, 13)]
+    return jsonify({
+        "labels": labels,
+        "datasets": [
+            {"label": "Gatos", "data": gatos, "backgroundColor": "#2196F3"},
+            {"label": "Perros", "data": perros, "backgroundColor": "#FF9800"}
+        ]
+    })
+
+
+@api_bp.get("/avisos/<int:aviso_id>/comentarios")
+def listar_comentarios(aviso_id: int):
+    """
+    Lista comentarios de un aviso.
+      - Query:
+          - offset: int >= 0 (default 0)
+          - limit:  int [1..100] (default 20)
+          - order:  'asc'|'desc' (default 'desc')
+    ->
+      - JSON: {"items":[...], "total":int, "offset":int, "limit":int, "order":str}
+    """
+    # parse query
+    try:
+        offset = max(int(request.args.get("offset", "0")), 0)
+    except ValueError:
+        offset = 0
+    try:
+        limit = int(request.args.get("limit", "20"))
+        limit = max(1, min(limit, 100))
+    except ValueError:
+        limit = 20
+    order = (request.args.get("order") or "desc").lower()
+    order = "asc" if order == "asc" else "desc"
+
+    with get_session() as s:
+        # verificar existencia aviso
+        exists = s.scalar(select(func.count(AvisoAdopcion.id)).where(AvisoAdopcion.id == aviso_id)) or 0
+        if not exists:
+            return jsonify({"error": "Aviso no encontrado"}), 404
+
+        total = s.scalar(
+            select(func.count(Comentario.id)).where(Comentario.aviso_id == aviso_id)
+        ) or 0
+
+        q = select(Comentario).where(Comentario.aviso_id == aviso_id)
+        if order == "asc":
+            q = q.order_by(Comentario.fecha.asc(), Comentario.id.asc())
+        else:
+            q = q.order_by(Comentario.fecha.desc(), Comentario.id.desc())
+
+        rows: List[Comentario] = s.execute(q.offset(offset).limit(limit)).scalars().all()
+
+        items = [{
+            "id": c.id,
+            "aviso_id": c.aviso_id,
+            "nombre": c.nombre,
+            "texto": c.texto,
+            # usamos el mismo formato que el frontend ya consume (Card.#fmt soporta "YYYY-MM-DD HH:MM")
+            "fecha": _fmt(c.fecha),
+        } for c in rows]
+
+    return jsonify({
+        "items": items,
+        "total": int(total),
+        "offset": offset,
+        "limit": limit,
+        "order": order,
+    })
+
+
+@api_bp.post("/avisos/<int:aviso_id>/comentarios")
+def crear_comentario(aviso_id: int):
+    """
+    Crea un comentario para un aviso.
+      - Body (JSON): {"nombre": str(3..80), "texto": str(5..300)}
+    ->
+      - 201 con el comentario creado
+      - 400 si payload inválido
+      - 404 si el aviso no existe
+    """
+    if not request.is_json:
+        return jsonify({"error": "Se requiere JSON"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    errors, nombre, texto = _validate_comment_payload(payload)
+    if errors:
+        return jsonify({"error": "validation_error", "fields": errors}), 400
+
+    with get_session() as s:
+        # verificar existencia aviso
+        exists = s.scalar(select(func.count(AvisoAdopcion.id)).where(AvisoAdopcion.id == aviso_id)) or 0
+        if not exists:
+            return jsonify({"error": "Aviso no encontrado"}), 404
+
+        # persistir (seteamos la fecha en servidor)
+        now = datetime.now()
+        c = Comentario(
+            aviso_id=aviso_id,
+            nombre=nombre,
+            texto=texto,
+            fecha=now,
+        )
+        s.add(c)
+        s.commit()
+        s.refresh(c)
+
+        return jsonify({
+            "id": c.id,
+            "aviso_id": c.aviso_id,
+            "nombre": c.nombre,
+            "texto": c.texto,
+            "fecha": _fmt(c.fecha),
         }), 201

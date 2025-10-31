@@ -43,7 +43,7 @@
                 if (!el) throw new Error(`#${k === 'root' ? 'paginator' : 'pg-' + k} no encontrado`);
             }
 
-            this.list = new window.AdoptionList(this.listMount, []);
+            this.list = new window.AdoptionList(this.listMount, [], { redirectOnClick: true });
             this.totalPages = 1;
             this.current = 1;
 

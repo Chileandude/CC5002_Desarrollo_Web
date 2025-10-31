@@ -121,6 +121,11 @@ class AvisoAdopcion(Base):
         cascade="all, delete-orphan",
         passive_deletes=False,
     )
+    comentarios: Mapped[List["Comentario"]] = relationship(
+        back_populates="aviso",
+        cascade="all, delete-orphan",
+        passive_deletes=False,
+    )
 
 
 class Foto(Base):
@@ -183,3 +188,39 @@ class ContactarPor(Base):
     )
 
     aviso: Mapped["AvisoAdopcion"] = relationship(back_populates="contactos")
+
+
+class Comentario(Base):
+    """
+    Modelo Comentario.
+      - Tabla: tarea2.comentario
+      - Columnas: id, nombre(≤80), texto(≤300), fecha (TIMESTAMP NOT NULL), aviso_id(FK)
+      - Relación: aviso: AvisoAdopcion
+    """
+    __tablename__ = "comentario"
+    __table_args__ = {"schema": SCHEMA}
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(80), nullable=False)
+    texto: Mapped[str] = mapped_column(String(300), nullable=False)
+
+    fecha: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    aviso_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{SCHEMA}.aviso_adopcion.id", ondelete="NO ACTION", onupdate="NO ACTION"),
+        nullable=False,
+        index=True,
+    )
+
+    aviso: Mapped["AvisoAdopcion"] = relationship(back_populates="comentarios")
+
+    def to_dict(self) -> dict:
+        iso = self.fecha.replace(microsecond=0).isoformat() + "Z" if self.fecha else None
+        return {
+            "id": self.id,
+            "aviso_id": self.aviso_id,
+            "nombre": self.nombre,
+            "texto": self.texto,
+            "fecha": iso,
+        }

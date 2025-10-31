@@ -56,6 +56,7 @@ class MenuSidebar {
         const hrefHome = R.home ?? "#";
         const hrefList = R.list ?? "#";
         const hrefStats = R.stats ?? "#";
+        const hrefEval = R.evaluate ?? "#";
 
         this.container.innerHTML = `
       <button type="button" class="sidenav__toggle"
@@ -68,6 +69,7 @@ class MenuSidebar {
         <a href="${hrefHome}">Inicio</a>
         <a href="${hrefList}">Listado</a>
         <a href="${hrefStats}">Estadísticas</a>
+        <a href="${hrefEval}">Evaluación</a>
       </nav>
     `;
 

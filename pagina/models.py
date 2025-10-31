@@ -126,6 +126,10 @@ class AvisoAdopcion(Base):
         cascade="all, delete-orphan",
         passive_deletes=False,
     )
+    notas: Mapped[List["Nota"]] = relationship(
+        cascade="all, delete-orphan",
+        passive_deletes=False,
+    )
 
 
 class Foto(Base):
@@ -224,3 +228,22 @@ class Comentario(Base):
             "texto": self.texto,
             "fecha": iso,
         }
+
+
+class Nota(Base):
+    """
+    Modelo Nota (evaluación 1..7) asociada a un aviso.
+      - Tabla: tarea2.nota
+      - Columnas: id (PK), aviso_id (FK), nota (int 1..7)
+    """
+    __tablename__ = "nota"
+    __table_args__ = {"schema": SCHEMA}
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    aviso_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey(f"{SCHEMA}.aviso_adopcion.id", ondelete="NO ACTION", onupdate="NO ACTION"),
+        nullable=False,
+        index=True,
+    )
+    nota: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -6,7 +6,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 
 from .db import get_session
-from .models import AvisoAdopcion, Comuna, Region, ContactarPor, Foto, Comentario
+from .models import AvisoAdopcion, Comuna, Region, ContactarPor, Foto, Comentario, Nota
 from .upload import save_uploaded_file, unidad_label, validate_aviso
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
@@ -136,10 +136,21 @@ def listar_avisos():
     with get_session() as s:
         total_items = s.scalar(select(func.count(AvisoAdopcion.id))) or 0
 
+        agg = (
+            select(
+                Nota.aviso_id.label("aviso_id"),
+                func.avg(Nota.nota).label("nota_promedio"),
+                func.count(Nota.id).label("notas_count"),
+            )
+            .group_by(Nota.aviso_id)
+            .subquery()
+        )
+
         stmt = (
-            select(AvisoAdopcion, Comuna, Region)
+            select(AvisoAdopcion, Comuna, Region, agg.c.nota_promedio, agg.c.notas_count, )
             .join(Comuna, Comuna.id == AvisoAdopcion.comuna_id)
             .join(Region, Region.id == Comuna.region_id)
+            .join(agg, agg.c.aviso_id == AvisoAdopcion.id, isouter=True)
             .options(
                 joinedload(AvisoAdopcion.fotos),
                 joinedload(AvisoAdopcion.contactos),
@@ -149,7 +160,12 @@ def listar_avisos():
             .offset(offset)
         )
         rows: List[Tuple[AvisoAdopcion, Comuna, Region]] = s.execute(stmt).unique().all()
-        data = [_serialize_row(r) for r in rows]
+        data = []
+        for aviso, comuna, region, nota_promedio, notas_count in rows:
+            base = _serialize_row((aviso, comuna, region))
+            base["nota_promedio"] = float(nota_promedio) if nota_promedio is not None else None
+            base["notas_count"] = int(notas_count or 0)
+            data.append(base)
 
     total_pages = (total_items + size - 1) // size if size else 0
 
@@ -555,3 +571,48 @@ def crear_comentario(aviso_id: int):
             "texto": c.texto,
             "fecha": _fmt(c.fecha),
         }), 201
+
+
+@api_bp.post("/avisos/<int:aviso_id>/notas")
+def crear_nota(aviso_id: int):
+    """
+    Agrega una nota (1..7) al aviso y retorna promedio+conteo actualizados.
+      - Body (JSON): {"nota": int}
+    ->
+      - 201 con {"avisoId", "nuevoPromedio", "nuevoConteo"}
+      - 400 si inválido
+      - 404 si aviso no existe
+    """
+    if not request.is_json:
+        return jsonify({"error": "Se requiere JSON"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        nota_val = int(payload.get("nota"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "La nota debe ser un entero entre 1 y 7."}), 400
+    if nota_val < 1 or nota_val > 7:
+        return jsonify({"error": "La nota debe ser un entero entre 1 y 7."}), 400
+
+    with get_session() as s:
+        # Verificar aviso
+        existe = s.scalar(select(func.count(AvisoAdopcion.id)).where(AvisoAdopcion.id == aviso_id)) or 0
+        if not existe:
+            return jsonify({"error": "Aviso no encontrado"}), 404
+
+        # Insertar nota
+        n = Nota(aviso_id=aviso_id, nota=nota_val)
+        s.add(n)
+        s.flush()  # asegura visibilidad en agregados
+
+        # Recalcular agregados
+        nuevo_promedio = s.scalar(select(func.avg(Nota.nota)).where(Nota.aviso_id == aviso_id))
+        nuevo_conteo = s.scalar(select(func.count(Nota.id)).where(Nota.aviso_id == aviso_id)) or 0
+
+        s.commit()
+
+    return jsonify({
+        "avisoId": aviso_id,
+        "nuevoPromedio": float(nuevo_promedio) if nuevo_promedio is not None else None,
+        "nuevoConteo": int(nuevo_conteo),
+    }), 201

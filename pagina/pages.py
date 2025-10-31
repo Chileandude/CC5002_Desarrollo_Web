@@ -23,6 +23,11 @@ def stats_view():
     return render_template("stats.html")
 
 
+@pages_bp.route("/evaluate", methods=["GET"])
+def evaluate_view():
+    return render_template("evaluate.html")
+
+
 @pages_bp.route("/routes.js", methods=["GET"])
 def routes_js():
     """
@@ -34,6 +39,7 @@ def routes_js():
     js = f"""window.ROUTES = {{
         home: "{url_for('pages.index')}",
         list: "{url_for('pages.list_view')}",
-        stats: "{url_for('pages.stats_view')}"
+        stats: "{url_for('pages.stats_view')}",
+        evaluate: "{url_for('pages.evaluate_view')}",
     }};"""
     return Response(js, mimetype="application/javascript")

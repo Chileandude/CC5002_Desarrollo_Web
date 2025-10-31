@@ -121,6 +121,28 @@
         return res.json();
     }
 
+    /**
+     * Envía una nueva nota (1..7) para un aviso.
+     * @param {number|string} avisoId
+     * @param {number} nota
+     * @returns {Promise<{ avisoId:number, nuevoPromedio:number|null, nuevoConteo:number }>}
+     */
+    async function postRating(avisoId, nota) {
+        const res = await fetch(`${API_BASE}/avisos/${avisoId}/notas`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body: JSON.stringify({nota}),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Error ${res.status} al enviar nota`);
+        }
+        return res.json();
+    }
+
 
     window.API = {
         fetchJSON,
@@ -132,5 +154,6 @@
         getStatsMonthly,
         getComments,
         postComment,
+        postRating,
     };
 })();

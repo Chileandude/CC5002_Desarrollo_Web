@@ -68,6 +68,7 @@
             this.mountEl = mountEl;
             this.data = data;
             this.options = options
+            this.mode = options.mode || "default";
             /** @type {Map<number, HTMLElement>} mapa id -> contenedor de detalle */
             this.detailsMap = new Map();
             /** @type {PhotoLightbox} */
@@ -79,12 +80,13 @@
             this.detailsMap.clear();
             const scroll = document.createElement("div");
             scroll.className = "adoptions-scroll";
+            if (this.mode === "evaluate") scroll.classList.add("adoptions--evaluate");
 
-            const head = this.#buildHead();
+            const head = (this.mode === "evaluate") ? this.#buildHeadEvaluate() : this.#buildHead();
             scroll.appendChild(head);
 
             for (const item of this.data) {
-                const row = this.#buildRow(item);
+                const row = (this.mode === "evaluate") ? this.#buildRowEvaluate(item) : this.#buildRow(item);
                 scroll.appendChild(row);
             }
             this.mountEl.appendChild(scroll);
@@ -161,6 +163,80 @@
                         toggle();
                     }
                 });
+            }
+            return row;
+        }
+
+        #buildHeadEvaluate() {
+            const head = document.createElement("div");
+            head.className = "adoption-head";
+            const labels = [
+                "ID",
+                "Fecha Publicación",
+                "Sector",
+                "Cantidad - Tipo - Edad",
+                "Comuna",
+                "Nota",
+                ""
+            ];
+            for (const lbl of labels) {
+                const div = document.createElement("div");
+                div.textContent = lbl;
+                head.appendChild(div);
+            }
+            return head;
+        }
+
+        #buildRowEvaluate(item) {
+            const row = document.createElement("div");
+            row.className = "adoption-row";
+            row.setAttribute("aria-expanded", "false");
+
+            // Derivados: cantidad - tipo - edad
+            const cte = [
+                (item.cantidad ?? "—"),
+                (item.tipo ?? "—"),
+                AdoptionListFmt.edad(item.edad, item.edad_unidad)
+            ].join(" - ");
+
+            // Nota: backend idealmente entrega item.nota_promedio y item.notas_count
+            const notasCount = Number(item.notas_count ?? item.notasCount ?? 0);
+            const notaProm = (notasCount > 0)
+                ? (Number(item.nota_promedio ?? item.notaPromedio ?? NaN))
+                : null;
+            const notaStr = (notasCount > 0 && Number.isFinite(notaProm))
+                ? String(Math.round(notaProm * 100) / 100)
+                : "–";
+
+            // Celdas en orden de la cabecera
+            const cells = [
+                String(item.id),
+                AdoptionListFmt.date(item.creado_en || item.fecha_publicacion || item.fechaPublicacion),
+                item.sector ?? "—",
+                cte,
+                item.comuna ?? "—",
+                notaStr,
+                "" // botón Evaluar va aquí
+            ];
+
+            // Render celdas
+            for (let i = 0; i < cells.length; i++) {
+                const c = document.createElement("div");
+                if (i === 5) {
+                    c.textContent = cells[i];
+                    c.classList.add("col-nota");
+                    c.dataset.count = String(notasCount);
+                } else if (i === 6) {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "btn-evaluar";
+                    btn.textContent = "Evaluar";
+                    btn.dataset.avisoId = String(item.id);
+                    c.appendChild(btn);
+                } else {
+                    c.textContent = cells[i];
+                }
+                row.appendChild(c);
             }
             return row;
         }

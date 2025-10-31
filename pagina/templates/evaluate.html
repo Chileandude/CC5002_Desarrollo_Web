@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluar Avisos de Adopción</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+</head>
+<body>
+<div id="menu-container"></div>
+
+<main id="main">
+    <h1>Evaluar Avisos de Adopción</h1>
+    <div id="adoptions-list" class="adoptions-list"></div>
+    <nav id="paginator" class="paginator" aria-label="Paginación">
+        <button id="pg-first" type="button">Primero</button>
+        <button id="pg-prev"  type="button" aria-label="Anterior">‹</button>
+        <span id="pg-info" aria-live="polite">1 de 1</span>
+        <button id="pg-next"  type="button" aria-label="Siguiente">›</button>
+        <button id="pg-last"  type="button">Último</button>
+    </nav>
+</main>
+
+<!-- Lightbox global para fotos -->
+<div id="photo-lightbox" class="photo-lightbox" aria-hidden="true">
+    <div class="photo-lightbox__backdrop" data-close></div>
+    <figure
+            class="photo-lightbox__figure"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Vista ampliada de foto"
+    >
+        <!--es un gif 1x1 transparente soluciona el validador usado en el curso -->
+        <img id="lightbox-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+             alt="Foto ampliada" width="800" height="600">
+        <button class="photo-lightbox__close" type="button" data-close>Cerrar</button>
+        <figcaption id="lightbox-caption" class="photo-lightbox__caption"></figcaption>
+    </figure>
+</div>
+
+<!-- Modal Evaluar -->
+<div id="rate-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="rate-title">
+    <div class="modal-content">
+        <button type="button" class="modal-close" data-rate-close>&times;</button>
+        <h2 id="rate-title">Evaluar aviso</h2>
+        <p>Selecciona una nota entre 1 y 7:</p>
+
+        <form id="rate-form">
+            <div class="rate-options">
+                <label><input type="radio" name="nota" value="1" required> 1</label>
+                <label><input type="radio" name="nota" value="2"> 2</label>
+                <label><input type="radio" name="nota" value="3"> 3</label>
+                <label><input type="radio" name="nota" value="4"> 4</label>
+                <label><input type="radio" name="nota" value="5"> 5</label>
+                <label><input type="radio" name="nota" value="6"> 6</label>
+                <label><input type="radio" name="nota" value="7"> 7</label>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="rate-cancel">Cancelar</button>
+                <button type="submit" class="btn-primary" id="rate-submit">Guardar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Dependencias -->
+<script src="{{ url_for('pages.routes_js') }}"></script>
+<script src="{{ url_for('static', filename='js/utils/api.js') }}"></script>
+
+<!-- Componentes -->
+<script src="{{ url_for('static', filename='js/components/MenuSidebar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/PhotoLightbox.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/AdoptionList.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/EvaluateView.js') }}"></script>
+
+<script>
+    const menu = new MenuSidebar({openWidth: 140, closedWidth: 56, brandHtml: "🐾"});
+    document.getElementById("menu-container").appendChild(menu.render());
+</script>
+</body>
+</html>

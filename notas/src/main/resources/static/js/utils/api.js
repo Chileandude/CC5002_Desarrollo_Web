@@ -1,0 +1,159 @@
+(function () {
+    /**
+     * Base de la API (inyectable por el entorno).
+     * @type {string}
+     */
+    const API_BASE = window.API_BASE ?? "/api";
+
+
+    /**
+     * Hace GET y parsea JSON.
+     * @template T
+     * @param {string} url
+     * @returns {Promise<T>}
+     */
+    async function fetchJSON(url) {
+        const res = await fetch(url, {headers: {"Accept": "application/json"}});
+        if (!res.ok) throw new Error(`Error ${res.status} al pedir ${url}`);
+        return res.json();
+    }
+
+    /**
+     * Obtiene los últimos avisos.
+     * @param {number} [limit=5] - Límite [1..10]
+     * @returns {Promise<LatestResponse>}
+     */
+    async function getLatestAds(limit = 5) {
+        const u = new URL(`${API_BASE}/avisos/latest`, window.location.origin);
+        u.searchParams.set("limit", String(limit));
+        return fetchJSON(u.toString());
+    }
+
+
+    /**
+     * Obtiene una página del listado de avisos.
+     * @param {number} [page=1] - Página (>=1)
+     * @param {number} [size=5] - Tamaño [1..50]
+     * @returns {Promise<PageResponse>}
+     */
+    async function getAdsPage(page = 1, size = 5) {
+        const u = new URL(`${API_BASE}/avisos`, window.location.origin);
+        u.searchParams.set("page", String(page));
+        u.searchParams.set("size", String(size));
+        return fetchJSON(u.toString()); // => { data, page, size, total_pages, total_items }
+    }
+
+    /**
+     * Obtiene un aviso por id.
+     * @param {number|string} id
+     * @returns {Promise<AdSerialized>}
+     */
+    async function getAdById(id) {
+        const u = new URL(`${API_BASE}/avisos/${id}`, window.location.origin);
+        return fetchJSON(u.toString());
+    }
+
+    /**
+     * Estadística: avisos por día en un rango.
+     * @param {{ from?: string, to?: string }} [opts]
+     * @returns {Promise<{ labels: string[], datasets: Array<{ label: string, data: number[] }> }>}
+     */
+    async function getStatsDaily(opts = {}) {
+        const u = new URL(`${API_BASE}/stats/daily`, window.location.origin);
+        if (opts.from) u.searchParams.set("from", opts.from);
+        if (opts.to) u.searchParams.set("to", opts.to);
+        return fetchJSON(u.toString());
+    }
+
+    /**
+     * Estadística: totales por tipo.
+     * @returns {Promise<{ labels: string[], datasets: Array<{ label: string, data: number[] }> }>}
+     */
+    async function getStatsByType() {
+        const u = new URL(`${API_BASE}/stats/by-type`, window.location.origin);
+        return fetchJSON(u.toString());
+    }
+
+    /**
+     * Estadística: barras por mes para un año.
+     * @param {number} [year] - Año (YYYY). Si no se indica, lo define el backend.
+     * @returns {Promise<{ labels: string[], datasets: Array<{ label: string, data: number[] }> }>}
+     */
+    async function getStatsMonthly(year) {
+        const u = new URL(`${API_BASE}/stats/monthly`, window.location.origin);
+        if (year) u.searchParams.set("year", String(year));
+        return fetchJSON(u.toString());
+    }
+
+    /**
+     * Obtiene los comentarios de un aviso (paginados).
+     * @param {number|string} avisoId - ID del aviso.
+     * @param {{ page?: number, limit?: number, order?: "asc"|"desc" }} [opts]
+     * @returns {Promise<{ data: Array<{id:number, nombre:string, texto:string, fecha:string}>, total: number, page: number, limit: number }>}
+     */
+    async function getComments(avisoId, opts = {}) {
+        const u = new URL(`${API_BASE}/avisos/${avisoId}/comentarios`, window.location.origin);
+        if (opts.page) u.searchParams.set("page", String(opts.page));
+        if (opts.limit) u.searchParams.set("limit", String(opts.limit));
+        if (opts.order) u.searchParams.set("order", opts.order);
+        return fetchJSON(u.toString());
+    }
+
+    /**
+     * Envía un nuevo comentario a un aviso.
+     * @param {number|string} avisoId - ID del aviso.
+     * @param {{ nombre: string, texto: string }} payload
+     * @returns {Promise<{ id:number, aviso_id:number, nombre:string, texto:string, fecha:string }>}
+     */
+    async function postComment(avisoId, payload) {
+        const res = await fetch(`${API_BASE}/avisos/${avisoId}/comentarios`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Error ${res.status} al enviar comentario`);
+        }
+        return res.json();
+    }
+
+    /**
+     * Envía una nueva nota (1..7) para un aviso.
+     * @param {number|string} avisoId
+     * @param {number} nota
+     * @returns {Promise<{ avisoId:number, nuevoPromedio:number|null, nuevoConteo:number }>}
+     */
+    async function postRating(avisoId, nota) {
+        const res = await fetch(`${API_BASE}/avisos/${avisoId}/notas`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            body: JSON.stringify({nota}),
+        });
+        if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || `Error ${res.status} al enviar nota`);
+        }
+        return res.json();
+    }
+
+
+    window.API = {
+        fetchJSON,
+        getLatestAds,
+        getAdsPage,
+        getAdById,
+        getStatsDaily,
+        getStatsByType,
+        getStatsMonthly,
+        getComments,
+        postComment,
+        postRating,
+    };
+})();

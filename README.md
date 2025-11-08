@@ -11,7 +11,7 @@ El proyecto fue desarrollado aplicando principios de **DRY (Don't Repeat Yoursel
 ## Instalación
 1. Clona el repositorio.
 2. Asegúrate de tener instalado:
-   - Java **21+**
+   - Java **17+**
    - Maven **3.9+**
 3. Además, debes tener MySQL instalado y en ejecución.
 
@@ -21,6 +21,8 @@ Ejecuta la aplicación Spring Boot con:
 ./mvnw spring-boot:run       # Linux / macOS
 .\mvnw.cmd spring-boot:run   # Windows
 ```
+También pueden ejecutar `NotasApplication.java` desde su IDE favorito.
+
 La aplicación estará disponible en: http://127.0.0.1:5000
 
 Para detener la aplicación basta haciendo `Crtl + C` en la terminal.
@@ -62,8 +64,5 @@ mysql -u cc5002 -pprogramacionweb tarea2 < bdd\cargar_dummy.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\tabla-comentario.sql 
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\tabla-nota.sql 
 ```
-El primer script es obligatorio, ya que crea las tablas vacías necesarias para que la aplicación funcione.
-El segundo script carga en las tablas región y comuna los datos de referencia.
-Finalmente, el tercer script inserta avisos de adopción de prueba en la base de datos.
 
 ---

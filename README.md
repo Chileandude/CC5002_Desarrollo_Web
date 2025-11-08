@@ -1,10 +1,8 @@
 # Plataforma de Adopción de Mascotas
 
-Aplicación web que muestra avisos de adopción a través de tres vistas:
+Aplicación web desarrollada en Spring Boot con Thymeleaf y MySQL, que permite visualizar y evaluar avisos de adopción de mascotas.
 
-- **Portada (`index.html`)**: bienvenida, botón para agregar aviso y últimos 5 avisos publicados.
-- **Listado (`list.html`)**: tabla con todos los avisos, permite ver detalles y fotos ampliadas.
-- **Estadísticas (`stats.html`)**: gráficos estáticos con distribución de avisos por fecha y tipo de mascota.
+- **Evaluar (`evaluate.html`)**: vista para asignar notas (1–7) a cada aviso, registradas en la base de datos.
 
 El proyecto fue desarrollado aplicando principios de **DRY (Don't Repeat Yourself)** y un enfoque **orientado a objetos (OOP)** en la organización de componentes JavaScript.
 
@@ -12,32 +10,26 @@ El proyecto fue desarrollado aplicando principios de **DRY (Don't Repeat Yoursel
 
 ## Instalación
 1. Clona el repositorio.
-2. Asegúrate de tener Python **3.10+** instalado.
+2. Asegúrate de tener instalado:
+   - Java **17+**
+   - Maven **3.9+**
 3. Además, debes tener MySQL instalado y en ejecución.
-4. Crear un entorno virtual (recomendado):
-``` 
-python -m venv venv
-source venv/bin/activate   # En Linux
-venv\Scripts\activate      # En Windows
-```
-5. Instalar dependencias desde requirements.txt:
-``` 
-pip install -r requirements.txt
-```
----
+
 ## Uso
-Ejecuta la aplicación Flask con:
+Ejecuta la aplicación Spring Boot con:
 ```
-python3 run.py # En Linux
-python run.py  # En Windows
+./mvnw spring-boot:run       # Linux / macOS
+.\mvnw.cmd spring-boot:run   # Windows
 ```
+También pueden ejecutar `NotasApplication.java` desde su IDE favorito.
+
 La aplicación estará disponible en: http://127.0.0.1:5000
 
 Para detener la aplicación basta haciendo `Crtl + C` en la terminal.
 
 ---
 ## Base de datos
-La app usa las credenciales definidas en `pagina/config.py`:
+La app usa las credenciales definidas en `application.properties`:
 
 - USER: `cc5002`
 - PASSWORD: `programacionweb`
@@ -63,29 +55,14 @@ mysql -u cc5002 -pprogramacionweb tarea2 < bdd/tarea2.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd/region-comuna.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd/cargar_dummy.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd/tabla-comentario.sql
+mysql -u cc5002 -pprogramacionweb tarea2 < bdd/tabla-nota.sql
 
 # Windows
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\tarea2.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\region-comuna.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\cargar_dummy.sql
 mysql -u cc5002 -pprogramacionweb tarea2 < bdd\tabla-comentario.sql 
+mysql -u cc5002 -pprogramacionweb tarea2 < bdd\tabla-nota.sql 
 ```
-El primer script es obligatorio, ya que crea las tablas vacías necesarias para que la aplicación funcione.
-El segundo script carga en las tablas región y comuna los datos de referencia.
-Finalmente, el tercer script inserta avisos de adopción de prueba en la base de datos.
 
 ---
-## Gráficos y visualización de datos
-
-En la vista Estadísticas, los gráficos se generan con la librería Chart.js de código abierto para visualización
-interactiva en canvas.
-
-Se usa para mostrar:
-
-- La cantidad de avisos por día (línea temporal).
-
-- El total por tipo de mascota (gráfico de torta).
-
-- El total por mes y tipo (barras agrupadas).
-
-Chart.js se integra mediante el componente StatisticsCharts.js, siguiendo la misma arquitectura OOP que el resto del proyecto.

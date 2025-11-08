@@ -1,0 +1,12 @@
+/* Contenedor principal */
+#main {
+  transition: margin-left 0.3s ease;
+  padding: 20px;
+  margin-left: 56px;
+}
+
+/* Variables de tema */
+:root {
+  --link: #f1f1f1;
+  --link-hover: #575757;
+}
